@@ -3,7 +3,7 @@ rm(list = ls())
 
 ### Checking the raw weighed soil texture data for errors ###
 
-dat <- read.csv("Soil_texture_data21Mar_explore.csv", sep = ";")
+dat <- read.csv("Soil_texture_Final.csv", sep = ";")
 
 summary(dat)
 
@@ -49,6 +49,12 @@ max(dat$between2_1)
 hist(dat$between2_1)
 boxplot(dat$between2_1)
 
+pairs(dat)
+
+#Looking at percent in categories
+
+plot(dat$percent_over2, dat$percent_over1)
+text(dat$percent_over2, dat$percent_over1)
 
 
 
