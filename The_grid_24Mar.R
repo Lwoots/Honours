@@ -22,3 +22,5 @@ axis(side = 1, line = 1, at = c(1,11), labels = c("", ""))
 axis(side = 2, line = 1, at = c(1,11), labels = c("", ""))
 title(ylab = "50 m ", line = 1.2, cex.lab = 1.2)
 title(xlab = "50 m ", line = 1.2, cex.lab = 1.2)
+
+axis(side = 3, line = 1, labels = c("0", "5", "10"))
