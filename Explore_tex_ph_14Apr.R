@@ -7,7 +7,7 @@ rm(list = ls())
 setwd("/Users/larawootton/Documents/Honours/Data")
 
 if(!require(pacman)){install.packages("pacman", dependencies=TRUE); library(pacman)}
-p_load(dplyr, visdat)
+p_load(dplyr, visdat, ggplot2, RColorBrewer, cowplot)
 
 plots <- read.csv("plots.csv")
 sieved <- read.csv("Soil_texture_Final.csv", sep = ";") 
@@ -91,3 +91,159 @@ less5 <- texture %>% summarise(avg = mean(prop_less5),
 tex_des <- rbind(clay, silt, very_fine_sand, medium_sand, coarse_sand, very_coarse_sand, total_sand, less2, less5)
 category <- c("clay", "silt", "very_fine_sand", "medium_sand", "coarse_sand", "very_coarse_sand","total_sand", "less2", "less5")
 data.frame(category, tex_des)
+
+rm(clay, silt, very_fine_sand, medium_sand, coarse_sand, very_coarse_sand, total_sand, less2, less5)
+
+
+#Plots####
+theme_set(theme_bw())
+ggplot(site3,
+       aes(x,y, colour = Clay)) +
+  scale_color_gradient(low = "blue", high = "red", limits = c(0,8))+
+  geom_point()
+  
+
+
+my_theme <- theme(
+  #axis.title.x = element_blank(),
+  axis.text.x = element_blank(),
+  axis.ticks.x = element_blank(),
+  axis.title.y = element_blank(),
+  axis.text.y = element_blank(),
+  axis.ticks.y = element_blank(),
+  panel.grid = element_blank()
+)
+my_colour <- scale_color_distiller(palette = "YlOrRd", limits = c(0,8.03), direction = 0)
+#Clay
+names(site1)
+leg <- ggplot(site1,
+              aes(x, y,
+                  colour = Clay)) +
+  geom_point(cex = 9) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 1")
+p1 <- ggplot(site1,
+             aes(x, y,
+                 colour = Clay)) +
+              geom_point(cex = 9) +
+              my_theme +
+              my_colour +
+              labs(x = "Site 1") +
+  theme(legend.position = "none")
+p2 <- ggplot(site3,
+             aes(x, y,
+                 colour = Clay)) +
+  geom_point(cex = 9) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 3") +
+  theme(legend.position = "none")
+
+
+legend <- get_legend(leg)
+plot_grid(p1,p2, legend, nrow = 1, rel_widths = c(1,1,0.1))            
+
+
+
+#Silt
+my_colour <- scale_color_distiller(palette = "YlOrRd", limits = c(min(grid_texture$Silt), max(grid_texture$Silt)), direction = 0)
+
+leg <- ggplot(site1,
+              aes(x, y,
+                  colour = Silt)) +
+  geom_point(cex = 9) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 1")
+p1 <- ggplot(site1,
+             aes(x, y,
+                 colour = Silt)) +
+  geom_point(cex = 9) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 1") +
+  theme(legend.position = "none")
+p2 <- ggplot(site3,
+             aes(x, y,
+                 colour = Silt)) +
+  geom_point(cex = 9) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 3") +
+  theme(legend.position = "none")
+
+
+legend <- get_legend(leg)
+plot_grid(p1,p2, legend, nrow = 1, rel_widths = c(1,1,0.1))   
+
+#Sand
+
+my_colour <- scale_color_distiller(palette = "YlOrRd", limits = c(min(grid_texture$Sand), max(grid_texture$Sand)), direction = 0)
+
+leg <- ggplot(site1,
+              aes(x, y,
+                  colour = Sand)) +
+  geom_point(cex = 9) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 1")
+p1 <- ggplot(site1,
+             aes(x, y,
+                 colour = Sand)) +
+  geom_point(cex = 9) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 1") +
+  theme(legend.position = "none")
+p2 <- ggplot(site3,
+             aes(x, y,
+                 colour = Sand)) +
+  geom_point(cex = 9) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 3") +
+  theme(legend.position = "none")
+
+
+legend <- get_legend(leg)
+plot_grid(p1,p2, legend, nrow = 1, rel_widths = c(1,1,0.1)) 
+
+#ph
+
+my_colour <- scale_color_distiller(palette = "YlOrRd", limits = c(min(grid_texture$ph_kcl), max(grid_texture$ph_kcl)), direction = 0)
+
+leg <- ggplot(site1,
+              aes(x, y,
+                  colour = ph_kcl)) +
+  geom_point(cex = 9) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 1")
+p1 <- ggplot(site1,
+             aes(x, y,
+                 colour = ph_kcl)) +
+  geom_point(cex = 9) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 1") +
+  theme(legend.position = "none")
+p2 <- ggplot(site3,
+             aes(x, y,
+                 colour = ph_kcl)) +
+  geom_point(cex = 9) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 3") +
+  theme(legend.position = "none")
+
+my_colour <- scale_color_distiller(palette = "YlOrRd", limits = c(min(grid_texture$conductivity_ms), max(grid_texture$conductivity_ms)), direction = 0)
+
+
+ggplot(site3,
+       aes(x, y,
+           colour = conductivity_ms)) +
+  geom_point(cex = 9) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 1")
