@@ -38,18 +38,18 @@ texture <- mutate(texture,
 grid_texture <- texture %>% filter(type == "grid") %>% arrange(plot)
 
 site3 <- grid_texture[7:42,] %>% 
-                     mutate(x = as.vector(c(rep(1,6), rep(3,6), rep(5,6), rep(7,6), rep(9,6), rep(11,6))),
-                            y = as.vector(rep(seq(1, 11, 2), 6)))
+                     mutate(y = sort(as.vector(c(rep(1,6), rep(3,6), rep(5,6), rep(7,6), rep(9,6), rep(11,6))), decreasing = T),
+                            x = as.vector(rep(seq(1, 11, 2), 6)))
 
 site1 <- grid_texture[c(1:6, 43:72),] %>% 
-                      mutate(x = as.vector(c(rep(1,6), rep(3,6), rep(5,6), rep(7,6), rep(9,6), rep(11,6))),
-                             y = as.vector(rep(seq(1, 11, 2), 6)))
+                      mutate(y = sort(as.vector(c(rep(1,6), rep(3,6), rep(5,6), rep(7,6), rep(9,6), rep(11,6))), decreasing = T),
+                             x = as.vector(rep(seq(1, 11, 2), 6)))
 
 site2 <- grid_texture[73:111,]
 
 rm(ph, malvern, plots, sieved)
 
-#Descriptive stats
+#Descriptive stats ####
 names(texture)
 clay <- texture %>% summarise(avg = mean(Clay), 
                               max = max(Clay), 
@@ -93,6 +93,7 @@ category <- c("clay", "silt", "very_fine_sand", "medium_sand", "coarse_sand", "v
 data.frame(category, tex_des)
 
 rm(clay, silt, very_fine_sand, medium_sand, coarse_sand, very_coarse_sand, total_sand, less2, less5)
+
 
 
 #Plots####
@@ -246,4 +247,12 @@ ggplot(site3,
   geom_point(cex = 9) +
   my_theme +
   my_colour +
-  labs(x = "Site 1")
+  labs(x = "Site 3")
+
+
+plot(site3$x, site3$y)
+text(site3$x, site3$y, labels = site3$plot)
+plot(site3$y, site3$x)
+text(site3$y, site3$x, labels = site3$plot)
+
+?text
