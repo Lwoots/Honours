@@ -1,0 +1,1028 @@
+---
+title: "Spatial distribution of species abundance"
+author: "Lara Wootton"
+date: "19 April 2018"
+output: html_document
+---
+Sites 2 and 3 are mirror images of reality.   
+Only species with 20 or more individuals have been plotted.
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+setwd("/Users/larawootton/Documents/Honours/Data")
+
+if(!require(pacman)){install.packages("pacman", dependencies=TRUE); library(pacman)}
+p_load(dplyr, visdat, ggplot2, RColorBrewer, cowplot)
+
+raw <- read.csv("Species_abundance_for_analysis.csv", sep = ";")
+
+raw <- raw %>% mutate(site = c(rep("site1", 121), rep("site2", 121), rep("site3",121)))
+grid <- raw %>% mutate(y = as.vector(rep(sort(c(rep(1,11), rep(2,11), rep(3,11), rep(4,11), rep(5,11), rep(6,11), rep(7,11), rep(8,11), rep(9,11), rep(10,11), rep(11,11)), decreasing = T), 3)),
+                       x = as.vector(rep(rep(seq(1, 11, 1), 11), 3)))
+raw$site <- as.factor(raw$site)
+
+site1 <- grid %>% filter(site == "site1")
+site2 <- grid %>% filter(site == "site2")
+site3 <- grid %>% filter(site == "site3")
+
+
+#Theme
+theme_set(theme_bw())
+my_theme <- theme(
+  #axis.title.x = element_blank(),
+  axis.text.x = element_blank(),
+  axis.ticks.x = element_blank(),
+  axis.title.y = element_blank(),
+  axis.text.y = element_blank(),
+  axis.ticks.y = element_blank(),
+  panel.grid = element_blank(),
+  legend.title.align = 0.5,
+  legend.title = element_text(angle = 270, hjust = 1)
+)
+```
+
+###Species in all three sites
+
+####Ruschia burtoniae
+```{r Ruschia burtoniae, echo=F, fig.height=4, fig.width=12}
+
+my_colour <- scale_color_distiller(palette = "YlGn", limits = c(min(grid$ruschia_burtoniae, na.rm = T), max(grid$ruschia_burtoniae, na.rm = T)), direction = 0, name = "ruschia_burtoniae")
+
+leg <- ggplot(site1,
+              aes(x, y,
+                  colour = ruschia_burtoniae)) +
+  geom_point(cex = 10, shape = 15) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 1")
+p1 <- ggplot(site1,
+             aes(x, y,
+                 colour = ruschia_burtoniae)) +
+  geom_point(cex = 10, shape = 15) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 1") +
+  theme(legend.position = "none") 
+
+p2 <- ggplot(site2,
+             aes(x, y,
+                 colour = ruschia_burtoniae)) +
+  geom_point(cex = 10, shape = 15) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 2") +
+  theme(legend.position = "none")
+
+p3 <- ggplot(site3,
+             aes(x, y,
+                 colour = ruschia_burtoniae)) +
+  geom_point(cex = 10, shape = 15) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 3") +
+  theme(legend.position = "none")
+
+
+legend <- get_legend(leg)
+plot_grid(p1,p2,p3, legend, nrow = 1, rel_widths = c(0.9,0.9,0.9,0.2)) 
+```
+
+####Cephalophyllum spissum
+```{r, echo=F, fig.height=4, fig.width=12}
+
+my_colour <- scale_color_distiller(palette = "YlGn", limits = c(min(grid$c_spissum, na.rm = T), max(grid$c_spissum, na.rm = T)), direction = 0, name = "c_spissum")
+
+leg <- ggplot(site1,
+              aes(x, y,
+                  colour = c_spissum)) +
+  geom_point(cex = 10, shape = 15) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 1")
+p1 <- ggplot(site1,
+             aes(x, y,
+                 colour = c_spissum)) +
+  geom_point(cex = 10, shape = 15) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 1") +
+  theme(legend.position = "none") 
+
+p2 <- ggplot(site2,
+             aes(x, y,
+                 colour = c_spissum)) +
+  geom_point(cex = 10, shape = 15) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 2") +
+  theme(legend.position = "none")
+
+p3 <- ggplot(site3,
+             aes(x, y,
+                 colour = c_spissum)) +
+  geom_point(cex = 10, shape = 15) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 3") +
+  theme(legend.position = "none")
+
+
+legend <- get_legend(leg)
+plot_grid(p1,p2,p3, legend, nrow = 1, rel_widths = c(0.9,0.9,0.9,0.2)) 
+```
+
+####Argyroderma delaetii
+```{r, echo=F, fig.height=4, fig.width=12}
+
+my_colour <- scale_color_distiller(palette = "YlGn", limits = c(min(grid$a_delaetii, na.rm = T), max(grid$a_delaetii, na.rm = T)), direction = 0, name = "a_delaetii")
+
+leg <- ggplot(site1,
+              aes(x, y,
+                  colour = a_delaetii)) +
+  geom_point(cex = 10, shape = 15) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 1")
+p1 <- ggplot(site1,
+             aes(x, y,
+                 colour = a_delaetii)) +
+  geom_point(cex = 10, shape = 15) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 1") +
+  theme(legend.position = "none") 
+
+p2 <- ggplot(site2,
+             aes(x, y,
+                 colour = a_delaetii)) +
+  geom_point(cex = 10, shape = 15) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 2") +
+  theme(legend.position = "none")
+
+p3 <- ggplot(site3,
+             aes(x, y,
+                 colour = a_delaetii)) +
+  geom_point(cex = 10, shape = 15) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 3") +
+  theme(legend.position = "none")
+
+
+legend <- get_legend(leg)
+plot_grid(p1,p2,p3, legend, nrow = 1, rel_widths = c(0.9,0.9,0.9,0.2)) 
+```
+
+
+####Oophytum
+
+```{r, echo=F, fig.height=4, fig.width=12}
+
+my_colour <- scale_color_distiller(palette = "YlGn", limits = c(min(grid$oophytum, na.rm = T), max(grid$oophytum, na.rm = T)), direction = 0, name = "oophytum")
+
+leg <- ggplot(site1,
+              aes(x, y,
+                  colour =oophytum)) +
+  geom_point(cex = 10, shape = 15) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 1")
+p1 <- ggplot(site1,
+             aes(x, y,
+                 colour = oophytum)) +
+  geom_point(cex = 10, shape = 15) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 1") +
+  theme(legend.position = "none") 
+
+p2 <- ggplot(site2,
+             aes(x, y,
+                 colour = oophytum)) +
+  geom_point(cex = 10, shape = 15) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 2") +
+  theme(legend.position = "none")
+
+p3 <- ggplot(site3,
+             aes(x, y,
+                 colour = oophytum)) +
+  geom_point(cex = 10, shape = 15) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 3") +
+  theme(legend.position = "none")
+
+
+legend <- get_legend(leg)
+plot_grid(p1,p2,p3, legend, nrow = 1, rel_widths = c(0.9,0.9,0.9,0.2)) 
+```
+
+####Argyroderma fissum
+
+```{r, echo=F, fig.height=4, fig.width=12}
+
+my_colour <- scale_color_distiller(palette = "YlGn", limits = c(min(grid$a_fissum, na.rm = T), max(grid$a_fissum, na.rm = T)), direction = 0, name = "a_fissum")
+
+leg <- ggplot(site1,
+              aes(x, y,
+                  colour = a_fissum)) +
+  geom_point(cex = 10, shape = 15) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 1")
+p1 <- ggplot(site1,
+             aes(x, y,
+                 colour = a_fissum)) +
+  geom_point(cex = 10, shape = 15) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 1") +
+  theme(legend.position = "none") 
+
+p2 <- ggplot(site2,
+             aes(x, y,
+                 colour = a_fissum)) +
+  geom_point(cex = 10, shape = 15) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 2") +
+  theme(legend.position = "none")
+
+p3 <- ggplot(site3,
+             aes(x, y,
+                 colour = a_fissum)) +
+  geom_point(cex = 10, shape = 15) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 3") +
+  theme(legend.position = "none")
+
+
+legend <- get_legend(leg)
+plot_grid(p1,p2,p3, legend, nrow = 1, rel_widths = c(0.9,0.9,0.9,0.2)) 
+```
+
+####Dicrocaulon
+
+```{r, echo=F, fig.height=4, fig.width=12}
+
+my_colour <- scale_color_distiller(palette = "YlGn", limits = c(min(grid$dicrocaulon, na.rm = T), max(grid$dicrocaulon, na.rm = T)), direction = 0, name = "dicrocaulon")
+
+leg <- ggplot(site1,
+              aes(x, y,
+                  colour = dicrocaulon)) +
+  geom_point(cex = 10, shape = 15) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 1")
+p1 <- ggplot(site1,
+             aes(x, y,
+                 colour = dicrocaulon)) +
+  geom_point(cex = 10, shape = 15) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 1") +
+  theme(legend.position = "none") 
+
+p2 <- ggplot(site2,
+             aes(x, y,
+                 colour = dicrocaulon)) +
+  geom_point(cex = 10, shape = 15) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 2") +
+  theme(legend.position = "none")
+
+p3 <- ggplot(site3,
+             aes(x, y,
+                 colour = dicrocaulon)) +
+  geom_point(cex = 10, shape = 15) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 3") +
+  theme(legend.position = "none")
+
+
+legend <- get_legend(leg)
+plot_grid(p1,p2,p3, legend, nrow = 1, rel_widths = c(0.9,0.9,0.9,0.2)) 
+```
+
+####Drosanthemum diversifolium
+```{r, echo=F, fig.height=4, fig.width=12}
+
+my_colour <- scale_color_distiller(palette = "YlGn", limits = c(min(grid$drosanthemum_diversifolium, na.rm = T), max(grid$drosanthemum_diversifolium, na.rm = T)), direction = 0, name = "drosanthemum_diversifolium")
+
+leg <- ggplot(site1,
+              aes(x, y,
+                  colour = drosanthemum_diversifolium)) +
+  geom_point(cex = 10, shape = 15) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 1")
+p1 <- ggplot(site1,
+             aes(x, y,
+                 colour = drosanthemum_diversifolium)) +
+  geom_point(cex = 10, shape = 15) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 1") +
+  theme(legend.position = "none") 
+
+p2 <- ggplot(site2,
+             aes(x, y,
+                 colour = drosanthemum_diversifolium)) +
+  geom_point(cex = 10, shape = 15) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 2") +
+  theme(legend.position = "none")
+
+p3 <- ggplot(site3,
+             aes(x, y,
+                 colour = drosanthemum_diversifolium)) +
+  geom_point(cex = 10, shape = 15) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 3") +
+  theme(legend.position = "none")
+
+
+legend <- get_legend(leg)
+plot_grid(p1,p2,p3, legend, nrow = 1, rel_widths = c(0.9,0.9,0.9,0.2)) 
+```
+
+
+####Crassula deceptor
+
+```{r, echo=F, fig.height=4, fig.width=12}
+
+my_colour <- scale_color_distiller(palette = "YlGn", limits = c(min(grid$crassula_deceptor, na.rm = T), max(grid$crassula_deceptor, na.rm = T)), direction = 0, name = "crassula_deceptor")
+
+leg <- ggplot(site1,
+              aes(x, y,
+                  colour = crassula_deceptor)) +
+  geom_point(cex = 10, shape = 15) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 1")
+p1 <- ggplot(site1,
+             aes(x, y,
+                 colour = crassula_deceptor)) +
+  geom_point(cex = 10, shape = 15) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 1") +
+  theme(legend.position = "none") 
+
+p2 <- ggplot(site2,
+             aes(x, y,
+                 colour = crassula_deceptor)) +
+  geom_point(cex = 10, shape = 15) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 2") +
+  theme(legend.position = "none")
+
+p3 <- ggplot(site3,
+             aes(x, y,
+                 colour = crassula_deceptor)) +
+  geom_point(cex = 10, shape = 15) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 3") +
+  theme(legend.position = "none")
+
+
+legend <- get_legend(leg)
+plot_grid(p1,p2,p3, legend, nrow = 1, rel_widths = c(0.9,0.9,0.9,0.2)) 
+```
+
+####Tylecodon pygmaeus
+```{r, echo=F, fig.height=4, fig.width=12}
+
+my_colour <- scale_color_distiller(palette = "YlGn", limits = c(min(grid$tylecodon_pygmaeus, na.rm = T), max(grid$tylecodon_pygmaeus, na.rm = T)), direction = 0, name = "tylecodon_pygmaeus")
+
+leg <- ggplot(site1,
+              aes(x, y,
+                  colour = tylecodon_pygmaeus)) +
+  geom_point(cex = 10, shape = 15) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 1")
+p1 <- ggplot(site1,
+             aes(x, y,
+                 colour = tylecodon_pygmaeus)) +
+  geom_point(cex = 10, shape = 15) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 1") +
+  theme(legend.position = "none") 
+
+p2 <- ggplot(site2,
+             aes(x, y,
+                 colour = tylecodon_pygmaeus)) +
+  geom_point(cex = 10, shape = 15) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 2") +
+  theme(legend.position = "none")
+
+p3 <- ggplot(site3,
+             aes(x, y,
+                 colour = tylecodon_pygmaeus)) +
+  geom_point(cex = 10, shape = 15) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 3") +
+  theme(legend.position = "none")
+
+
+legend <- get_legend(leg)
+plot_grid(p1,p2,p3, legend, nrow = 1, rel_widths = c(0.9,0.9,0.9,0.2)) 
+```
+
+####Crassula columnaris
+```{r, echo=F, fig.height=4, fig.width=12}
+
+my_colour <- scale_color_distiller(palette = "YlGn", limits = c(min(grid$Crassula.sp..mini.columnus, na.rm = T), max(grid$Crassula.sp..mini.columnus, na.rm = T)), direction = 0, name = "Crassula columnaris")
+
+leg <- ggplot(site1,
+              aes(x, y,
+                  colour = Crassula.sp..mini.columnus)) +
+  geom_point(cex = 10, shape = 15) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 1")
+p1 <- ggplot(site1,
+             aes(x, y,
+                 colour = Crassula.sp..mini.columnus)) +
+  geom_point(cex = 10, shape = 15) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 1") +
+  theme(legend.position = "none") 
+
+p2 <- ggplot(site2,
+             aes(x, y,
+                 colour = Crassula.sp..mini.columnus)) +
+  geom_point(cex = 10, shape = 15) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 2") +
+  theme(legend.position = "none")
+
+p3 <- ggplot(site3,
+             aes(x, y,
+                 colour = Crassula.sp..mini.columnus)) +
+  geom_point(cex = 10, shape = 15) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 3") +
+  theme(legend.position = "none")
+
+
+legend <- get_legend(leg)
+plot_grid(p1,p2,p3, legend, nrow = 1, rel_widths = c(0.9,0.9,0.9,0.2)) 
+```
+
+####Crassula muscova
+```{r, echo=F, fig.height=4, fig.width=12}
+
+my_colour <- scale_color_distiller(palette = "YlGn", limits = c(min(grid$crassula_muscosa, na.rm = T), max(grid$crassula_muscosa, na.rm = T)), direction = 0, name = "crassula_muscosa")
+
+leg <- ggplot(site1,
+              aes(x, y,
+                  colour = crassula_muscosa)) +
+  geom_point(cex = 10, shape = 15) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 1")
+p1 <- ggplot(site1,
+             aes(x, y,
+                 colour = crassula_muscosa)) +
+  geom_point(cex = 10, shape = 15) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 1") +
+  theme(legend.position = "none") 
+
+p2 <- ggplot(site2,
+             aes(x, y,
+                 colour = crassula_muscosa)) +
+  geom_point(cex = 10, shape = 15) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 2") +
+  theme(legend.position = "none")
+
+p3 <- ggplot(site3,
+             aes(x, y,
+                 colour = crassula_muscosa)) +
+  geom_point(cex = 10, shape = 15) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 3") +
+  theme(legend.position = "none")
+
+
+legend <- get_legend(leg)
+plot_grid(p1,p2,p3, legend, nrow = 1, rel_widths = c(0.9,0.9,0.9,0.2)) 
+```
+
+####Caroxylon
+```{r, echo=F, fig.height=4, fig.width=12}
+
+my_colour <- scale_color_distiller(palette = "YlGn", limits = c(min(grid$caroxylon_sp1, na.rm = T), max(grid$caroxylon_sp1, na.rm = T)), direction = 0, name = "caroxylon_sp1")
+
+leg <- ggplot(site1,
+              aes(x, y,
+                  colour = caroxylon_sp1)) +
+  geom_point(cex = 10, shape = 15) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 1")
+p1 <- ggplot(site1,
+             aes(x, y,
+                 colour = caroxylon_sp1)) +
+  geom_point(cex = 10, shape = 15) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 1") +
+  theme(legend.position = "none") 
+
+p2 <- ggplot(site2,
+             aes(x, y,
+                 colour = caroxylon_sp1)) +
+  geom_point(cex = 10, shape = 15) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 2") +
+  theme(legend.position = "none")
+
+p3 <- ggplot(site3,
+             aes(x, y,
+                 colour = caroxylon_sp1)) +
+  geom_point(cex = 10, shape = 15) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 3") +
+  theme(legend.position = "none")
+
+
+legend <- get_legend(leg)
+plot_grid(p1,p2,p3, legend, nrow = 1, rel_widths = c(0.9,0.9,0.9,0.2)) 
+```
+
+####Galenia fruticosa
+```{r, echo=F, fig.height=4, fig.width=12}
+
+my_colour <- scale_color_distiller(palette = "YlGn", limits = c(min(grid$galenia_fruticosa, na.rm = T), max(grid$galenia_fruticosa, na.rm = T)), direction = 0, name = "galenia_fruticosa")
+
+leg <- ggplot(site1,
+              aes(x, y,
+                  colour = galenia_fruticosa)) +
+  geom_point(cex = 10, shape = 15) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 1")
+p1 <- ggplot(site1,
+             aes(x, y,
+                 colour = galenia_fruticosa)) +
+  geom_point(cex = 10, shape = 15) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 1") +
+  theme(legend.position = "none") 
+
+p2 <- ggplot(site2,
+             aes(x, y,
+                 colour = galenia_fruticosa)) +
+  geom_point(cex = 10, shape = 15) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 2") +
+  theme(legend.position = "none")
+
+p3 <- ggplot(site3,
+             aes(x, y,
+                 colour = galenia_fruticosa)) +
+  geom_point(cex = 10, shape = 15) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 3") +
+  theme(legend.position = "none")
+
+
+legend <- get_legend(leg)
+plot_grid(p1,p2,p3, legend, nrow = 1, rel_widths = c(0.9,0.9,0.9,0.2)) 
+```
+
+####Conophytum calculus
+```{r, echo=F, fig.height=4, fig.width=12}
+
+my_colour <- scale_color_distiller(palette = "YlGn", limits = c(min(grid$co_calculus, na.rm = T), max(grid$co_calculus, na.rm = T)), direction = 0, name = "co_calculus")
+
+leg <- ggplot(site1,
+              aes(x, y,
+                  colour = co_calculus)) +
+  geom_point(cex = 10, shape = 15) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 1")
+p1 <- ggplot(site1,
+             aes(x, y,
+                 colour = co_calculus)) +
+  geom_point(cex = 10, shape = 15) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 1") +
+  theme(legend.position = "none") 
+
+p2 <- ggplot(site2,
+             aes(x, y,
+                 colour = co_calculus)) +
+  geom_point(cex = 10, shape = 15) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 2") +
+  theme(legend.position = "none")
+
+p3 <- ggplot(site3,
+             aes(x, y,
+                 colour = co_calculus)) +
+  geom_point(cex = 10, shape = 15) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 3") +
+  theme(legend.position = "none")
+
+
+legend <- get_legend(leg)
+plot_grid(p1,p2,p3, legend, nrow = 1, rel_widths = c(0.9,0.9,0.9,0.2)) 
+```
+
+###Species in two sites
+
+####Ruschia comptonii
+```{r, echo=F, fig.height=4, fig.width=12}
+
+my_colour <- scale_color_distiller(palette = "YlGn", limits = c(min(grid$mesemb_1, na.rm = T), max(grid$mesemb_1, na.rm = T)), direction = 0, name = "R comptonii")
+
+leg <- ggplot(site1,
+              aes(x, y,
+                  colour = mesemb_1)) +
+  geom_point(cex = 10, shape = 15) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 1")
+p1 <- ggplot(site1,
+             aes(x, y,
+                 colour = mesemb_1)) +
+  geom_point(cex = 10, shape = 15) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 1") +
+  theme(legend.position = "none") 
+
+p2 <- ggplot(site2,
+             aes(x, y,
+                 colour = mesemb_1)) +
+  geom_point(cex = 10, shape = 15) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 2") +
+  theme(legend.position = "none")
+
+p3 <- ggplot(site3,
+             aes(x, y,
+                 colour = mesemb_1)) +
+  geom_point(cex = 10, shape = 15) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 3") +
+  theme(legend.position = "none")
+
+
+legend <- get_legend(leg)
+plot_grid(p1,p2,p3, legend, nrow = 1, rel_widths = c(0.9,0.9,0.9,0.2)) 
+```
+
+####Argyroderma framesii
+
+```{r, echo=F, fig.height=4, fig.width=12}
+
+my_colour <- scale_color_distiller(palette = "YlGn", limits = c(min(grid$a_framesii, na.rm = T), max(grid$a_framesii, na.rm = T)), direction = 0, name = "a_framesii")
+
+leg <- ggplot(site1,
+              aes(x, y,
+                  colour = a_framesii)) +
+  geom_point(cex = 10, shape = 15) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 1")
+p1 <- ggplot(site1,
+             aes(x, y,
+                 colour = a_framesii)) +
+  geom_point(cex = 10, shape = 15) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 1") +
+  theme(legend.position = "none") 
+
+p2 <- ggplot(site2,
+             aes(x, y,
+                 colour = a_framesii)) +
+  geom_point(cex = 10, shape = 15) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 2") +
+  theme(legend.position = "none")
+
+p3 <- ggplot(site3,
+             aes(x, y,
+                 colour = a_framesii)) +
+  geom_point(cex = 10, shape = 15) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 3") +
+  theme(legend.position = "none")
+
+
+legend <- get_legend(leg)
+plot_grid(p1,p2,p3, legend, nrow = 1, rel_widths = c(0.9,0.9,0.9,0.2)) 
+```
+
+####Argyroderma framesii X delaetii
+
+```{r, echo=F, fig.height=4, fig.width=12}
+
+my_colour <- scale_color_distiller(palette = "YlGn", limits = c(min(grid$framesiiXD, na.rm = T), max(grid$framesiiXD, na.rm = T)), direction = 0, name = "framesiiXD")
+
+leg <- ggplot(site1,
+              aes(x, y,
+                  colour = framesiiXD)) +
+  geom_point(cex = 10, shape = 15) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 1")
+p1 <- ggplot(site1,
+             aes(x, y,
+                 colour = framesiiXD)) +
+  geom_point(cex = 10, shape = 15) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 1") +
+  theme(legend.position = "none") 
+
+p2 <- ggplot(site2,
+             aes(x, y,
+                 colour = framesiiXD)) +
+  geom_point(cex = 10, shape = 15) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 2") +
+  theme(legend.position = "none")
+
+p3 <- ggplot(site3,
+             aes(x, y,
+                 colour = framesiiXD)) +
+  geom_point(cex = 10, shape = 15) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 3") +
+  theme(legend.position = "none")
+
+
+legend <- get_legend(leg)
+plot_grid(p1,p2,p3, legend, nrow = 1, rel_widths = c(0.9,0.9,0.9,0.2)) 
+```
+
+
+####Conophytum subfenestratum
+
+```{r, echo=F, fig.height=4, fig.width=12}
+
+my_colour <- scale_color_distiller(palette = "YlGn", limits = c(min(grid$c_subfenestratum, na.rm = T), max(grid$c_subfenestratum, na.rm = T)), direction = 0, name = "c_subfenestratum")
+
+leg <- ggplot(site1,
+              aes(x, y,
+                  colour = c_subfenestratum)) +
+  geom_point(cex = 10, shape = 15) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 1")
+p1 <- ggplot(site1,
+             aes(x, y,
+                 colour = c_subfenestratum)) +
+  geom_point(cex = 10, shape = 15) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 1") +
+  theme(legend.position = "none") 
+
+p2 <- ggplot(site2,
+             aes(x, y,
+                 colour = c_subfenestratum)) +
+  geom_point(cex = 10, shape = 15) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 2") +
+  theme(legend.position = "none")
+
+p3 <- ggplot(site3,
+             aes(x, y,
+                 colour = c_subfenestratum)) +
+  geom_point(cex = 10, shape = 15) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 3") +
+  theme(legend.position = "none")
+
+
+legend <- get_legend(leg)
+plot_grid(p1,p2,p3, legend, nrow = 1, rel_widths = c(0.9,0.9,0.9,0.2)) 
+```
+
+####Cephalophyllum staminodiosum
+
+```{r, echo=F, fig.height=4, fig.width=12}
+
+my_colour <- scale_color_distiller(palette = "YlGn", limits = c(min(grid$cephalophyllum_staminodiosum, na.rm = T), max(grid$cephalophyllum_staminodiosum, na.rm = T)), direction = 0, name = "cephalophyllum_staminodiosum")
+
+leg <- ggplot(site1,
+              aes(x, y,
+                  colour = cephalophyllum_staminodiosum)) +
+  geom_point(cex = 10, shape = 15) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 1")
+p1 <- ggplot(site1,
+             aes(x, y,
+                 colour = cephalophyllum_staminodiosum)) +
+  geom_point(cex = 10, shape = 15) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 1") +
+  theme(legend.position = "none") 
+
+p2 <- ggplot(site2,
+             aes(x, y,
+                 colour = cephalophyllum_staminodiosum)) +
+  geom_point(cex = 10, shape = 15) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 2") +
+  theme(legend.position = "none")
+
+p3 <- ggplot(site3,
+             aes(x, y,
+                 colour = cephalophyllum_staminodiosum)) +
+  geom_point(cex = 10, shape = 15) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 3") +
+  theme(legend.position = "none")
+
+
+legend <- get_legend(leg)
+plot_grid(p1,p2,p3, legend, nrow = 1, rel_widths = c(0.9,0.9,0.9,0.2)) 
+```
+
+
+###Species in one site
+
+####Monilaria moniliformis
+```{r, echo=F, fig.height=4, fig.width=12}
+
+my_colour <- scale_color_distiller(palette = "YlGn", limits = c(min(grid$monilaria_moniliformis, na.rm = T), max(grid$monilaria_moniliformis, na.rm = T)), direction = 0, name = "monilaria_moniliformis")
+
+leg <- ggplot(site1,
+              aes(x, y,
+                  colour = monilaria_moniliformis)) +
+  geom_point(cex = 10, shape = 15) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 1")
+p1 <- ggplot(site1,
+             aes(x, y,
+                 colour = monilaria_moniliformis)) +
+  geom_point(cex = 10, shape = 15) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 1") +
+  theme(legend.position = "none") 
+
+p2 <- ggplot(site2,
+             aes(x, y,
+                 colour = monilaria_moniliformis)) +
+  geom_point(cex = 10, shape = 15) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 2") +
+  theme(legend.position = "none")
+
+p3 <- ggplot(site3,
+             aes(x, y,
+                 colour = monilaria_moniliformis)) +
+  geom_point(cex = 10, shape = 15) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 3") +
+  theme(legend.position = "none")
+
+
+legend <- get_legend(leg)
+plot_grid(p1,p2,p3, legend, nrow = 1, rel_widths = c(0.9,0.9,0.9,0.2)) 
+```
+
+####Monilaria pisiformis
+
+```{r, echo=F, fig.height=4, fig.width=12}
+
+my_colour <- scale_color_distiller(palette = "YlGn", limits = c(min(grid$monoleria_pisiformis, na.rm = T), max(grid$monilaria_moniliformis, na.rm = T)), direction = 0, name = "monilaria_pisiformis")
+
+leg <- ggplot(site1,
+              aes(x, y,
+                  colour = monoleria_pisiformis)) +
+  geom_point(cex = 10, shape = 15) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 1")
+p1 <- ggplot(site1,
+             aes(x, y,
+                 colour = monoleria_pisiformis)) +
+  geom_point(cex = 10, shape = 15) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 1") +
+  theme(legend.position = "none") 
+
+p2 <- ggplot(site2,
+             aes(x, y,
+                 colour = monoleria_pisiformis)) +
+  geom_point(cex = 10, shape = 15) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 2") +
+  theme(legend.position = "none")
+
+p3 <- ggplot(site3,
+             aes(x, y,
+                 colour = monoleria_pisiformis)) +
+  geom_point(cex = 10, shape = 15) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 3") +
+  theme(legend.position = "none")
+
+
+legend <- get_legend(leg)
+plot_grid(p1,p2,p3, legend, nrow = 1, rel_widths = c(0.9,0.9,0.9,0.2)) 
+```
+
+####Sarcocornia
+```{r, echo=F, fig.height=4, fig.width=12}
+
+my_colour <- scale_color_distiller(palette = "YlGn", limits = c(min(grid$sarcocornia, na.rm = T), max(grid$sarcocornia, na.rm = T)), direction = 0, name = "sarcocornia")
+
+leg <- ggplot(site1,
+              aes(x, y,
+                  colour = sarcocornia)) +
+  geom_point(cex = 10, shape = 15) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 1")
+p1 <- ggplot(site1,
+             aes(x, y,
+                 colour = sarcocornia)) +
+  geom_point(cex = 10, shape = 15) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 1") +
+  theme(legend.position = "none") 
+
+p2 <- ggplot(site2,
+             aes(x, y,
+                 colour = sarcocornia)) +
+  geom_point(cex = 10, shape = 15) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 2") +
+  theme(legend.position = "none")
+
+p3 <- ggplot(site3,
+             aes(x, y,
+                 colour = sarcocornia)) +
+  geom_point(cex = 10, shape = 15) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 3") +
+  theme(legend.position = "none")
+
+
+legend <- get_legend(leg)
+plot_grid(p1,p2,p3, legend, nrow = 1, rel_widths = c(0.9,0.9,0.9,0.2)) 
+```
