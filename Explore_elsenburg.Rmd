@@ -1,0 +1,46 @@
+---
+title: "Nutrient exploratory analysis"
+author: "Lara Wootton"
+date: "5/3/2018"
+output: html_document
+---
+````{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+setwd("/Users/larawootton/Documents/Honours/Data")
+
+if(!require(pacman)){install.packages("pacman", dependencies=TRUE); library(pacman)}
+p_load(dplyr, visdat, ggplot2, RColorBrewer, cowplot, corrplot)
+
+raw_els <- read.csv("Elsenburg_data_for_analysis.csv", sep = ";")
+
+grid_els <- raw_els %>% arrange(plot)
+
+site3 <- grid_els[7:42,] %>% 
+  mutate(y = sort(as.vector(c(rep(1,6), rep(3,6), rep(5,6), rep(7,6), rep(9,6), rep(11,6))), decreasing = T),
+         x = as.vector(rep(seq(1, 11, 2), 6)))
+
+site1 <- grid_els[c(1:6, 43:72),] %>% 
+  mutate(y = sort(as.vector(c(rep(1,6), rep(3,6), rep(5,6), rep(7,6), rep(9,6), rep(11,6))), decreasing = T),
+         x = as.vector(rep(seq(1, 11, 2), 6)))
+
+temp <- matrix(rep(NA, length(grid_els)), nrow = 1)
+colnames(temp) <- colnames(grid_els)
+site2 <- rbind(grid_els[c(73:90, 93:96),], temp, grid_els[c(97, 100:111),]) %>% 
+  mutate(y = sort(
+    as.vector(c(rep(1,6), rep(3,6), rep(5,6), rep(7,6), rep(9,6), rep(11,6))), decreasing = T),
+    x = as.vector(rep(seq(1, 11, 2), 6)))
+rm(temp)
+```
+
+Data from Elsenburg analysis of soil samples from the Knersvlakte.
+
+```{r, echo=F, fig.height=8, fig.width=8, fig.cap="Pairs plot of all variables"}
+pairs(grid_els)
+```
+
+```{r, echo=F, fig.cap="Correlation graph. The size of the circles represents the magnitude of correlation between the variables"}
+
+c <- cor(grid_els[,2:8])
+corrplot.mixed(c, lower.col = "black")
+```
