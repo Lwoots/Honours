@@ -10,7 +10,7 @@ knitr::opts_chunk$set(echo = TRUE)
 setwd("/Users/larawootton/Documents/Honours/Data")
 
 if(!require(pacman)){install.packages("pacman", dependencies=TRUE); library(pacman)}
-p_load(dplyr, visdat, ggplot2, RColorBrewer, cowplot, corrplot)
+p_load(dplyr, visdat, ggplot2, RColorBrewer, cowplot, corrplot, knitr)
 
 raw_els <- read.csv("Elsenburg_data_for_analysis.csv", sep = ";")
 
@@ -31,6 +31,18 @@ site2 <- rbind(grid_els[c(73:90, 93:96),], temp, grid_els[c(97, 100:111),]) %>%
     as.vector(c(rep(1,6), rep(3,6), rep(5,6), rep(7,6), rep(9,6), rep(11,6))), decreasing = T),
     x = as.vector(rep(seq(1, 11, 2), 6)))
 rm(temp)
+
+#graphical parameters
+theme_set(theme_bw())
+my_theme <- theme(
+  #axis.title.x = element_blank(),
+  axis.text.x = element_blank(),
+  axis.ticks.x = element_blank(),
+  axis.title.y = element_blank(),
+  axis.text.y = element_blank(),
+  axis.ticks.y = element_blank(),
+  panel.grid = element_blank()
+)
 ```
 
 Data from Elsenburg analysis of soil samples from the Knersvlakte.
@@ -43,4 +55,409 @@ pairs(grid_els)
 
 c <- cor(grid_els[,2:8])
 corrplot.mixed(c, lower.col = "black")
+```
+
+```{r, echo=F}
+Acidity <- grid_els %>% summarise(Average = mean(acidity),
+                                  SD = sd(acidity),
+                                  Median = median(acidity),
+                                  Max = max(acidity),
+                                  Min = min(acidity))
+Ca <- grid_els %>% summarise(Average = mean(Ca),
+                                  SD = sd(Ca),
+                                  Median = median(Ca),
+                                  Max = max(Ca),
+                                  Min = min(Ca))
+Mg <- grid_els %>% summarise(Average = mean(Mg),
+                                  SD = sd(Mg),
+                                  Median = median(Mg),
+                                  Max = max(Mg),
+                                  Min = min(Mg))
+Na <- grid_els %>% summarise(Average = mean(Na),
+                                  SD = sd(Na),
+                                  Median = median(Na),
+                                  Max = max(Na),
+                                  Min = min(Na))
+K <- grid_els %>% summarise(Average = mean(K),
+                                  SD = sd(K),
+                                  Median = median(P),
+                                  Max = max(K),
+                                  Min = min(K))
+P <- grid_els %>% summarise(Average = mean(P),
+                                  SD = sd(P),
+                                  Median = median(P),
+                                  Max = max(P),
+                                  Min = min(P))
+Olsen <- grid_els %>% summarise(Average = mean(Olsen),
+                                  SD = sd(Olsen),
+                                  Median = median(Olsen),
+                                  Max = max(Olsen),
+                                  Min = min(Olsen))
+
+Variable <- c("Acidity (cmol/kg)", "Ca (cmol/kg)", "Mg (cmol/kg)", "Na (mg/kg)", "K (mg/kg)", "P (mg/kg", "Olsen P (mg/kg)")
+stats <- rbind(Acidity, Ca, Mg, Na, K, P, Olsen)
+stats <- round(stats, 2)
+kable(data.frame(Variable, stats))
+rm(Acidity, Ca, Mg, Na, K, P, Olsen, Variable)
+
+```
+
+###Individual variables {.tabset .tabset-fad}
+
+####Acidity
+
+```{r, echo=F, fig.width=9, fig.height=4}
+par(mfrow = c(1,3))
+hist(grid_els$acidity, xlab = "Exchangeable acidity (cmol/kg)", main = "")
+boxplot(grid_els$acidity, ylab = "Exchangeable acidity (cmol/kg)")
+points(mean(grid_els$acidity), pch = 19, col = "blue", cex = 1.2)
+dotchart(grid_els$acidity, lcolor = "white", ylab = "Order of data", xlab = "Exchangeable acidity (cmol/kg)")
+```
+
+```{r, echo=F, fig.width=12, fig.height=4}
+my_colour <- scale_color_distiller(palette = "YlOrRd", limits = c(min(grid_els$acidity), max(grid_els$acidity)), direction = 0)
+leg <- ggplot(site1,
+              aes(x, y,
+                  colour = acidity)) +
+  geom_point(cex = 9) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 1")
+p1 <- ggplot(site1,
+             aes(x, y,
+                 colour = acidity)) +
+              geom_point(cex = 10, shape = 15) +
+              my_theme +
+              my_colour +
+              labs(x = "Site 1") +
+  theme(legend.position = "none")
+
+p2 <- ggplot(site2,
+             aes(x, y,
+                 colour = acidity)) +
+  geom_point(cex = 10, shape = 15) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 2") +
+  theme(legend.position = "none")
+
+p3 <- ggplot(site3,
+             aes(x, y,
+                 colour = acidity)) +
+  geom_point(cex = 10, shape = 15) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 3") +
+  theme(legend.position = "none")
+  
+legend <- get_legend(leg)
+plot_grid(p1,p2,p3, legend, nrow = 1, rel_widths = c(0.9,0.9,0.9,0.2)) 
+```
+
+
+####Ca
+
+```{r, echo=F, fig.width=9, fig.height=4}
+par(mfrow = c(1,3))
+hist(grid_els$Ca, xlab = "Ca (cmol/kg)", main = "")
+boxplot(grid_els$Ca, ylab = "Ca (cmol/kg)")
+points(mean(grid_els$Ca), pch = 19, col = "blue", cex = 1.2)
+dotchart(grid_els$Ca, lcolor = "white", ylab = "Order of data", xlab = "Ca (cmol/kg)")
+```
+
+```{r, echo=F, fig.width=12, fig.height=4}
+my_colour <- scale_color_distiller(palette = "YlOrRd", limits = c(min(grid_els$Ca), max(grid_els$Ca)), direction = 0)
+leg <- ggplot(site1,
+              aes(x, y,
+                  colour = Ca)) +
+  geom_point(cex = 9) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 1")
+p1 <- ggplot(site1,
+             aes(x, y,
+                 colour = Ca)) +
+              geom_point(cex = 10, shape = 15) +
+              my_theme +
+              my_colour +
+              labs(x = "Site 1") +
+  theme(legend.position = "none")
+
+p2 <- ggplot(site2,
+             aes(x, y,
+                 colour = Ca)) +
+  geom_point(cex = 10, shape = 15) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 2") +
+  theme(legend.position = "none")
+
+p3 <- ggplot(site3,
+             aes(x, y,
+                 colour = Ca)) +
+  geom_point(cex = 10, shape = 15) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 3") +
+  theme(legend.position = "none")
+  
+legend <- get_legend(leg)
+plot_grid(p1,p2,p3, legend, nrow = 1, rel_widths = c(0.9,0.9,0.9,0.2)) 
+```
+
+####Mg
+
+```{r, echo=F, fig.width=9, fig.height=4}
+par(mfrow = c(1,3))
+hist(grid_els$Mg, xlab = "Mg (cmol/kg)", main = "")
+boxplot(grid_els$Mg, ylab = "Mg (cmol/kg)")
+points(mean(grid_els$Mg), pch = 19, col = "blue", cex = 1.2)
+dotchart(grid_els$Mg, lcolor = "white", ylab = "Order of data", xlab = "Mg (cmol/kg)")
+```
+
+```{r, echo=F, fig.width=12, fig.height=4}
+my_colour <- scale_color_distiller(palette = "YlOrRd", limits = c(min(grid_els$Mg), max(grid_els$Mg)), direction = 0)
+leg <- ggplot(site1,
+              aes(x, y,
+                  colour = Mg)) +
+  geom_point(cex = 9) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 1")
+p1 <- ggplot(site1,
+             aes(x, y,
+                 colour = Mg)) +
+              geom_point(cex = 10, shape = 15) +
+              my_theme +
+              my_colour +
+              labs(x = "Site 1") +
+  theme(legend.position = "none")
+
+p2 <- ggplot(site2,
+             aes(x, y,
+                 colour = Mg)) +
+  geom_point(cex = 10, shape = 15) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 2") +
+  theme(legend.position = "none")
+
+p3 <- ggplot(site3,
+             aes(x, y,
+                 colour = Mg)) +
+  geom_point(cex = 10, shape = 15) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 3") +
+  theme(legend.position = "none")
+  
+legend <- get_legend(leg)
+plot_grid(p1,p2,p3, legend, nrow = 1, rel_widths = c(0.9,0.9,0.9,0.2)) 
+```
+
+
+####Na
+
+```{r, echo=F, fig.width=9, fig.height=4}
+par(mfrow = c(1,3))
+hist(grid_els$Na, xlab = "Na (mg/kg)", main = "")
+boxplot(grid_els$Na, ylab = "Na (mg/kg)")
+points(mean(grid_els$Na), pch = 19, col = "blue", cex = 1.2)
+dotchart(grid_els$Na, lcolor = "white", ylab = "Order of data", xlab = "Na (mg/kg)")
+```
+
+
+```{r, echo=F, fig.width=12, fig.height=4}
+my_colour <- scale_color_distiller(palette = "YlOrRd", limits = c(min(grid_els$Na), max(grid_els$Na)), direction = 0)
+leg <- ggplot(site1,
+              aes(x, y,
+                  colour = Na)) +
+  geom_point(cex = 9) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 1")
+p1 <- ggplot(site1,
+             aes(x, y,
+                 colour = Na)) +
+              geom_point(cex = 10, shape = 15) +
+              my_theme +
+              my_colour +
+              labs(x = "Site 1") +
+  theme(legend.position = "none")
+
+p2 <- ggplot(site2,
+             aes(x, y,
+                 colour = Na)) +
+  geom_point(cex = 10, shape = 15) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 2") +
+  theme(legend.position = "none")
+
+p3 <- ggplot(site3,
+             aes(x, y,
+                 colour = Na)) +
+  geom_point(cex = 10, shape = 15) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 3") +
+  theme(legend.position = "none")
+  
+legend <- get_legend(leg)
+plot_grid(p1,p2,p3, legend, nrow = 1, rel_widths = c(0.9,0.9,0.9,0.2)) 
+```
+
+
+####K
+
+```{r, echo=F, fig.width=9, fig.height=4}
+par(mfrow = c(1,3))
+hist(grid_els$K, xlab = "K (mg/kg)", main = "")
+boxplot(grid_els$K, ylab = "K (mg/kg)")
+points(mean(grid_els$K), pch = 19, col = "blue", cex = 1.2)
+dotchart(grid_els$K, lcolor = "white", ylab = "Order of data", xlab = "K (mg/kg)")
+```
+
+
+```{r, echo=F, fig.width=12, fig.height=4}
+my_colour <- scale_color_distiller(palette = "YlOrRd", limits = c(min(grid_els$K), max(grid_els$K)), direction = 0)
+leg <- ggplot(site1,
+              aes(x, y,
+                  colour = K)) +
+  geom_point(cex = 9) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 1")
+p1 <- ggplot(site1,
+             aes(x, y,
+                 colour = K)) +
+              geom_point(cex = 10, shape = 15) +
+              my_theme +
+              my_colour +
+              labs(x = "Site 1") +
+  theme(legend.position = "none")
+
+p2 <- ggplot(site2,
+             aes(x, y,
+                 colour = K)) +
+  geom_point(cex = 10, shape = 15) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 2") +
+  theme(legend.position = "none")
+
+p3 <- ggplot(site3,
+             aes(x, y,
+                 colour = K)) +
+  geom_point(cex = 10, shape = 15) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 3") +
+  theme(legend.position = "none")
+  
+legend <- get_legend(leg)
+plot_grid(p1,p2,p3, legend, nrow = 1, rel_widths = c(0.9,0.9,0.9,0.2)) 
+```
+
+####P
+
+```{r, echo=F, fig.width=9, fig.height=4}
+par(mfrow = c(1,3))
+hist(grid_els$P, xlab = "P (mg/kg)", main = "")
+boxplot(grid_els$P, ylab = "P (mg/kg)")
+points(mean(grid_els$P), pch = 19, col = "blue", cex = 1.2)
+dotchart(grid_els$P, lcolor = "white", ylab = "Order of data", xlab = "P (mg/kg)")
+```
+
+
+```{r, echo=F, fig.width=12, fig.height=4}
+my_colour <- scale_color_distiller(palette = "YlOrRd", limits = c(min(grid_els$P), max(grid_els$P)), direction = 0)
+leg <- ggplot(site1,
+              aes(x, y,
+                  colour = P)) +
+  geom_point(cex = 9) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 1")
+p1 <- ggplot(site1,
+             aes(x, y,
+                 colour = P)) +
+              geom_point(cex = 10, shape = 15) +
+              my_theme +
+              my_colour +
+              labs(x = "Site 1") +
+  theme(legend.position = "none")
+
+p2 <- ggplot(site2,
+             aes(x, y,
+                 colour = P)) +
+  geom_point(cex = 10, shape = 15) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 2") +
+  theme(legend.position = "none")
+
+p3 <- ggplot(site3,
+             aes(x, y,
+                 colour = P)) +
+  geom_point(cex = 10, shape = 15) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 3") +
+  theme(legend.position = "none")
+  
+legend <- get_legend(leg)
+plot_grid(p1,p2,p3, legend, nrow = 1, rel_widths = c(0.9,0.9,0.9,0.2)) 
+```
+
+
+####Olsen P
+
+```{r, echo=F, fig.width=9, fig.height=4}
+par(mfrow = c(1,3))
+hist(grid_els$Olsen, xlab = "Olsen P (mg/kg)", main = "")
+boxplot(grid_els$Olsen, ylab = "Olsen P (mg/kg)")
+points(mean(grid_els$Olsen), pch = 19, col = "blue", cex = 1.2)
+dotchart(grid_els$Olsen, lcolor = "white", ylab = "Order of data", xlab = "Olsen P (mg/kg)")
+```
+
+
+```{r, echo=F, fig.width=12, fig.height=4}
+my_colour <- scale_color_distiller(palette = "YlOrRd", limits = c(min(grid_els$Olsen), max(grid_els$Olsen)), direction = 0)
+leg <- ggplot(site1,
+              aes(x, y,
+                  colour = Olsen)) +
+  geom_point(cex = 9) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 1")
+p1 <- ggplot(site1,
+             aes(x, y,
+                 colour = Olsen)) +
+              geom_point(cex = 10, shape = 15) +
+              my_theme +
+              my_colour +
+              labs(x = "Site 1") +
+  theme(legend.position = "none")
+
+p2 <- ggplot(site2,
+             aes(x, y,
+                 colour = Olsen)) +
+  geom_point(cex = 10, shape = 15) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 2") +
+  theme(legend.position = "none")
+
+p3 <- ggplot(site3,
+             aes(x, y,
+                 colour = Olsen)) +
+  geom_point(cex = 10, shape = 15) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 3") +
+  theme(legend.position = "none")
+  
+legend <- get_legend(leg)
+plot_grid(p1,p2,p3, legend, nrow = 1, rel_widths = c(0.9,0.9,0.9,0.2)) 
 ```
