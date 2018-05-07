@@ -11,7 +11,7 @@ rm(list = ls())
 setwd("/Users/larawootton/Documents/Honours/Data")
 
 if(!require(pacman)){install.packages("pacman", dependencies=TRUE); library(pacman)}
-p_load(dplyr, visdat, ggplot2, RColorBrewer, cowplot)
+p_load(dplyr, visdat, ggplot2, RColorBrewer, cowplot, corrplot)
 
 raw_els <- read.csv("Elsenburg_data_for_analysis.csv", sep = ";")
 glimpse(raw_els)
@@ -43,3 +43,16 @@ rm(temp)
 
 
 #exploratory analysis####
+vis_dat(grid_els)
+pairs(grid_els)
+c <- cor(grid_els[,2:8])
+corrplot.mixed(c, lower.col = "black")
+
+
+#acidity####
+
+par(mfrow = c(1,3))
+hist(grid_els$acidity, xlab = "Exchangeable acidity (cmol/kg)", main = "")
+boxplot(grid_els$acidity, ylab = "Exchangeable acidity (cmol/kg)")
+points(mean(grid_els$acidity), pch = 19, col = "blue", cex = 1.2)
+dotchart(grid_els$acidity, lcolor = "white", ylab = "Order of data", xlab = "Exchangeable acidity (cmol/kg)")
