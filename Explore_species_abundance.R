@@ -118,27 +118,22 @@ plot_grid(p1,p2,p3, legend, nrow = 1, rel_widths = c(0.9,0.9,0.9,0.2))
 
 #Species richness ####
 
-species_only <- raw %>% select(-c(Q_cover, transect, X, lampranthus)) 
+raw2 <- read.csv("Species_abundance_for_analysis.csv", sep = ";")
+species_only <- raw2 %>% select(-c(Q_cover, transect, X, lampranthus)) 
 glimpse(species_only)
 
-if_else(species_only[,2:46]>0, 1,0)
-species_richness <- apply(species_only[,2:46], 1, function(x) {if_else(x>0, 1,0)})
-species_richness <- replace(species_only[,2:46], species_only[,2:46] > 0, 1)
-
-
+species_richness<- replace(species_only[,2:46], species_only[,2:46] > 0, 1)
 glimpse(species_richness)
 
-species_richness <- apply(species_richness[,2:46], 1, sum, na.rm = T )
+species_richness <- apply(species_richness, 1, sum, na.rm = T )
 
-sp_richness <- data.frame(plot = species_richness[,1], sp_rich = apply(species_richness[,2:46], 1, sum, na.rm = T ), site = c(rep("site1", 121), rep("site2", 121), rep("site3",121)))
-glimpse(sp_richness)
 
 sp_richness <- data.frame(plot = species_only[,1], sp_rich = species_richness, site = c(rep("site1", 121), rep("site2", 121), rep("site3",121)))
 glimpse(sp_richness)
 
 sp_richness <- sp_richness %>% mutate(y = as.vector(rep(sort(c(rep(1,11), rep(2,11), rep(3,11), rep(4,11), rep(5,11), rep(6,11), rep(7,11), rep(8,11), rep(9,11), rep(10,11), rep(11,11)), decreasing = T), 3)),
                                               x = as.vector(rep(rep(seq(1, 11, 1), 11), 3)))
-
+glimpse(sp_richness)
 
 
 my_colour2 <- scale_color_gradient(low = "white", high = "red", limits = c(min(sp_richness$sp_rich, na.rm = T), max(sp_richness$sp_rich, na.rm = T)), breaks = seq(0,9,1), name = "Species richness")
@@ -148,14 +143,14 @@ leg <- ggplot(sp_richness[sp_richness$site == "site1",],
                   colour = sp_rich)) +
   geom_point(cex = 10, shape = 15) +
   my_theme +
-  my_colour +
+  my_colour2 +
   labs(x = "Site 1")
 p1 <- ggplot(sp_richness[sp_richness$site == "site1",],
              aes(x, y,
                  colour = sp_rich)) +
   geom_point(cex = 10, shape = 15) +
   my_theme +
-  my_colour +
+  my_colour2 +
   labs(x = "Site 1") +
   theme(legend.position = "none") 
 
@@ -164,7 +159,7 @@ p2 <- ggplot(sp_richness[sp_richness$site == "site2",],
                  colour = sp_rich)) +
   geom_point(cex = 10, shape = 15) +
   my_theme +
-  my_colour +
+  my_colour2 +
   labs(x = "Site 2") +
   theme(legend.position = "none")
 
@@ -173,7 +168,7 @@ p3 <- ggplot(sp_richness[sp_richness$site == "site3",],
                  colour = sp_rich)) +
   geom_point(cex = 10, shape = 15) +
   my_theme +
-  my_colour +
+  my_colour2 +
   labs(x = "Site 3") +
   theme(legend.position = "none")
 
