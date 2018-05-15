@@ -9,7 +9,7 @@ rm(list = ls())
 setwd("/Users/larawootton/Documents/Honours/Data")
 
 if(!require(pacman)){install.packages("pacman", dependencies=TRUE); library(pacman)}
-p_load(dplyr, ggplot2, RColorBrewer, sp, lattice, munsell, gstat)
+p_load(dplyr, ggplot2, RColorBrewer, sp, lattice, munsell, gstat, automap, cowplot)
 
 plots <- read.csv("geo_ref_plots.csv")
 sieved <- read.csv("Soil_texture_Final.csv", sep = ";") 
@@ -34,6 +34,7 @@ full_dat <- my_dat %>% mutate(my_hue = if_else(hue == "5YR", 5, if_else(hue == "
 full_dat <- left_join(plots, full_dat, by = "plot")
 grid_data <- full_dat %>% filter(type == "grid")
 test_data <- full_dat %>% filter(type == "random")
+test_data <- mutate(as.data.frame(test_data), MgSqrt = sqrt(Mg))
 
 glimpse(my_dat)
 rm(my_data, break_down, raw, sieved, ph, my_dat, raw_els)
@@ -52,7 +53,7 @@ shapiro.test(log(grid_data$Mg))
 shapiro.test(sqrt(grid_data$Mg)) #Square root transformation is the best
 
 grid_data <- mutate(grid_data, MgSqrt = sqrt(Mg))
-
+full_dat <- mutate(as.data.frame(full_dat), MgSqrt = sqrt(Mg))
 #The co variates also need to be normal
 
 hist(grid_data$my_hue)
@@ -84,4 +85,134 @@ ggplot(as.data.frame(full_dat), aes(lon, lat)) +
 
 #Fit a variogram with no covariates
 
-Mgsq_var <- variog
+Mgsq_var_cloud <- variogram(MgSqrt ~ 1, data = grid_data, cloud = T)
+plot(Mgsq_var_cloud)
+
+Mgsq_var <- variogram(MgSqrt ~ 1, data = grid_data)
+plot(Mgsq_var, pl = T)
+
+#fit model to variogram
+
+Mgsq_vgm <- vgm(0.65, "Sph", range =  0.00037, 0.18) #This is total thumb suck. Just played around until it fitted
+plot(Mgsq_var, pl = T, model = Mgsq_vgm)
+
+#This isn't looking hopeful, so let's auto fit.
+
+auto_Mg <- autofitVariogram(MgSqrt ~ 1, grid_data)
+
+summary(auto_Mg)
+plot(auto_Mg)
+
+autokrige_Mg <- autoKrige(MgSqrt ~ 1, grid_data, full_dat)
+plot(autokrige_Mg)
+summary(autokrige_Mg)
+
+p <- ggplot(as.data.frame(full_dat), aes(lon, lat, colour = MgSqrt)) +
+  geom_point(size = 5) +
+  theme_bw()
+
+pred_krige_mg <- as.data.frame(autokrige_Mg[1])
+p2 <- ggplot(pred_krige_mg, aes(krige_output.lon, krige_output.lat, colour = krige_output.var1.pred)) +
+  geom_point(size = 5) +
+  theme_bw()
+
+plot(pred_krige_mg)
+
+plot_grid(p, p2)
+
+full_dat <- as.data.frame(full_dat)
+colnames(pred_krige_mg)[1] <- c("lon")
+pred <- left_join(full_dat, pred_krige_mg, by = "lon")
+
+test <- pred %>% filter(type == "random")
+
+plot(test$krige_output.var1.pred ~ test$MgSqrt)
+mod <- lm(test$krige_output.var1.pred ~ test$MgSqrt)
+summary(mod) #r squared = 0.59
+abline(mod)
+
+#Now for co kriging
+
+
+coordinates(full_dat) <- c("lon", "lat")
+coordinates(grid_data) <- c("lon", "lat")
+coordinates(test_data) <- c("lon", "lat")
+
+
+co_auto_Mg <- autofitVariogram(MgSqrt ~ chroma, grid_data)
+
+summary(auto_Mg)
+plot(auto_Mg)
+
+co_autokrige_Mg <- autoKrige(MgSqrt ~ chroma, grid_data, full_dat)
+plot(co_autokrige_Mg)
+summary(co_autokrige_Mg)
+
+
+p <- ggplot(as.data.frame(full_dat), aes(lon, lat, colour = MgSqrt)) +
+  geom_point(size = 5) +
+  theme_bw()
+
+pred_krige_mg <- as.data.frame(co_autokrige_Mg[1])
+p2 <- ggplot(pred_krige_mg, aes(krige_output.lon, krige_output.lat, colour = krige_output.var1.pred)) +
+  geom_point(size = 5) +
+  theme_bw()
+
+plot(pred_krige_mg)
+
+plot_grid(p, p2)
+
+#three = 0.2053
+
+
+
+
+full_dat <- as.data.frame(full_dat)
+colnames(pred_krige_mg)[1] <- c("lon")
+pred <- left_join(full_dat, pred_krige_mg, by = "lon")
+
+test <- pred %>% filter(type == "random")
+
+plot(test$krige_output.var1.pred ~ test$MgSqrt)
+mod <- lm(test$krige_output.var1.pred ~ test$MgSqrt)
+summary(mod) #r squared = 0.59
+abline(mod)
+
+
+plot(pred$MgSqrt ~ pred$chroma)
+
+
+
+
+auto_Mg <- autofitVariogram(Mg ~ 1, grid_data)
+
+summary(auto_Mg)
+plot(auto_Mg)
+
+autokrige_Mg <- autoKrige(Mg ~ 1, grid_data, full_dat)
+plot(autokrige_Mg)
+summary(autokrige_Mg)
+
+p <- ggplot(as.data.frame(full_dat), aes(lon, lat, colour = MgSqrt)) +
+  geom_point(size = 5) +
+  theme_bw()
+
+pred_krige_mg <- as.data.frame(autokrige_Mg[1])
+p2 <- ggplot(pred_krige_mg, aes(krige_output.lon, krige_output.lat, colour = krige_output.var1.pred)) +
+  geom_point(size = 5) +
+  theme_bw()
+
+plot(pred_krige_mg)
+
+plot_grid(p, p2)
+
+full_dat <- as.data.frame(full_dat)
+colnames(pred_krige_mg)[1] <- c("lon")
+pred <- left_join(full_dat, pred_krige_mg, by = "lon")
+
+test <- pred %>% filter(type == "random")
+
+plot(test$krige_output.var1.pred ~ test$MgSqrt)
+mod <- lm(test$krige_output.var1.pred ~ test$Mg)
+summary(mod) #r squared = 0.59
+abline(mod)
