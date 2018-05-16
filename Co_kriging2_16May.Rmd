@@ -1,0 +1,351 @@
+---
+title: "Experimenting with co-kriging"
+author: "Lara Wootton"
+date: "5/16/2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+rm(list = ls())
+setwd("/Users/larawootton/Documents/Honours/Data")
+
+if(!require(pacman)){install.packages("pacman", dependencies=TRUE); library(pacman)}
+p_load(dplyr, ggplot2, RColorBrewer, sp, lattice, munsell, gstat, automap, cowplot)
+
+source("/Users/larawootton/Documents/Honours/Project_analysis/to_be_sourced.R")
+rm(species_df)
+
+my_soil_df <- my_soil_df %>% mutate(MgSqrt = sqrt(Mg))
+my_grid <- my_soil_df %>% filter(type == "grid")
+
+theme_set(theme_bw())
+my_theme <- theme(
+  #axis.title.x = element_blank(),
+  axis.text.x = element_blank(),
+  axis.ticks.x = element_blank(),
+  axis.title.y = element_blank(),
+  axis.text.y = element_blank(),
+  axis.ticks.y = element_blank(),
+  panel.grid = element_blank()
+)
+my_colour <- scale_color_distiller(palette = "YlOrRd", direction = 0)
+
+```
+
+###Summary
+
+* Co-kriging with all three colour metrics generally reduced the R squared compared to ordinary kriging.   
+
+* Co-kriging with one colour matric resulted in similar R squared values to ordinary kriging.
+
+* The average R squared value was just over 0.6.
+However, there generally wasn't a one to one ratio between predicted and observed values.
+
+* Kriging over data per site rather than all three sites at once had mixed results. It improved the model for site 2, but the model for site 3 was much worse.   
+
+
+
+####Co kriging assumptions
+
+The target variable must be
+
+* Normally distributed
+* Stationary - local variation doesn’t change in different areas of the map
+* No trends
+
+The co variables must have
+
+* a feature-space correlation with the target variable
+* a spatial structure (i.e. be modelled as a regional variable)
+* a spatial co-variance with the target variable
+
+Not 100% sure how to check most of those assumptions, but let's check normality.
+```{r}
+par(mfrow=c(1,3))
+hist(my_grid$Mg, main = "", xlab = "Mg")
+hist(log(my_grid$Mg), main = "", xlab = "log Mg")
+hist(sqrt(my_grid$Mg), main = "", xlab = "sqrt Mg")
+```
+
+I'm going to be working with the sqrt transformed data, as they seem most normal.
+
+Let's look at the observed values
+
+```{r}
+my_soil_df %>% as.data.frame() %>% 
+  ggplot(aes(lon, lat, colour = MgSqrt)) +
+  geom_point(size = 4) +
+  my_colour
+```
+
+
+Package automap automatically fits variograms and krige
+
+First I'm going to do ordinary kriging without the covariates, then cokriging with covariates, then repeat for each site individually. 
+
+###Kriging {.tabset .tabset-fad}
+
+####All sites 
+
+```{r}
+
+coordinates(my_soil_df) <- c("lon", "lat")
+coordinates(my_grid) <- c("lon", "lat")
+test_dat <- my_soil_df %>% as.data.frame() %>% filter(type == "random")
+
+#Auto Kriging
+
+#fit variogram
+
+Mgsqrt_vgm <- autofitVariogram(MgSqrt ~ 1,  my_grid)
+plot(Mgsqrt_vgm)
+
+
+Mgsqrt_krige <- autoKrige(MgSqrt ~ 1, my_grid, my_soil_df)
+
+```
+```{r}
+pred <- Mgsqrt_krige[1] %>% as.data.frame() %>%  left_join(test_dat, Mgsqrt_krige, by = c("krige_output.lon" = "lon")) %>% filter(type == "random")
+mod <- lm(pred$krige_output.var1.pred ~ pred$MgSqrt)
+summary(mod) #R squared = 0.6383
+
+plot(pred$krige_output.var1.pred ~ pred$MgSqrt, xlab = "Observed", ylab = "Predicted")
+abline(0,1)
+abline(mod, col = "blue")
+
+Mgsqrt_krige[1] %>% as.data.frame() %>% ggplot(aes(krige_output.lon, krige_output.lat, colour = krige_output.var1.pred)) +
+  geom_point(size = 4) +
+  my_colour
+```
+
+The r squared was 0.6383, but the ratio between predicted and observed wasn't 1:1.
+
+Does co-kriging improve this?
+
+####Co-kriging all sites
+
+```{r, warning=F}
+
+Mgsqrt_vgm <- autofitVariogram(MgSqrt ~ my_hue + value + chroma,  my_grid)
+plot(Mgsqrt_vgm)
+
+
+Mgsqrt_krige <- autoKrige(MgSqrt ~ my_hue + value + chroma, my_grid, my_soil_df)
+
+```
+```{r}
+pred <- Mgsqrt_krige[1] %>% as.data.frame() %>%  left_join(test_dat, Mgsqrt_krige, by = c("krige_output.lon" = "lon")) %>% filter(type == "random")
+mod <- lm(pred$krige_output.var1.pred ~ pred$MgSqrt)
+summary(mod)
+
+plot(pred$krige_output.var1.pred ~ pred$MgSqrt, xlab = "Observed", ylab = "Predicted")
+abline(0,1)
+abline(mod, col = "blue")
+
+Mgsqrt_krige[1] %>% as.data.frame() %>% ggplot(aes(krige_output.lon, krige_output.lat, colour = krige_output.var1.pred)) +
+  geom_point(size = 4) +
+  my_colour
+```
+
+Cokriging actually reduced the r squared (0.5664)
+
+I repeated the analysis with only one covariate at a time, but there wasn't much effect on the r squared compared to ordinary kriging
+
+hue only = 0.6377    
+value only = 0.5939   
+chroma only = 0.6442    
+
+####Site 1 
+
+```{r, warning=F}
+site1<- my_soil_df %>% as.data.frame() %>% filter(site == "site1")
+site1_grid <- my_grid %>% as.data.frame() %>% filter(site == "site1")
+test_dat <- site1 %>% as.data.frame() %>% filter(type == "random")
+
+coordinates(site1) <- c("lon", "lat")
+coordinates(site1_grid) <- c("lon", "lat")
+
+#Ordinary kriging 
+
+
+Mgsqrt_vgm <- autofitVariogram(MgSqrt ~ 1,  site1_grid)
+plot(Mgsqrt_vgm)
+
+Mgsqrt_krige <- autoKrige(MgSqrt ~ 1, site1_grid, site1)
+```
+
+```{r}
+pred <- Mgsqrt_krige[1] %>% as.data.frame() %>%  left_join(test_dat, Mgsqrt_krige, by = c("krige_output.lon" = "lon")) %>% filter(type == "random")
+
+mod <- lm(pred$krige_output.var1.pred ~ pred$MgSqrt)
+summary(mod)
+plot(pred$krige_output.var1.pred ~ pred$MgSqrt, xlab = "Observed", ylab = "Predicted")
+abline(0,1)
+abline(mod, col = "blue")
+
+Mgsqrt_krige[1] %>% as.data.frame() %>% ggplot(aes(krige_output.lon, krige_output.lat, colour = krige_output.var1.pred)) +
+  geom_point(size = 4) +
+  my_colour
+```
+
+R squared is 0.6192, which is similar to doing all three plots at once
+
+####Co-kriging site 1
+
+```{r, warning=F}
+Mgsqrt_vgm <- autofitVariogram(MgSqrt ~ my_hue + value + chroma,  site1_grid)
+plot(Mgsqrt_vgm)
+
+Mgsqrt_krige <- autoKrige(MgSqrt ~ my_hue + value + chroma, site1_grid, site1)
+```
+
+```{r}
+pred <- Mgsqrt_krige[1] %>% as.data.frame() %>%  left_join(test_dat, Mgsqrt_krige, by = c("krige_output.lon" = "lon")) %>% filter(type == "random")
+
+mod <- lm(pred$krige_output.var1.pred ~ pred$MgSqrt)
+summary(mod)
+plot(pred$krige_output.var1.pred ~ pred$MgSqrt, xlab = "Observed", ylab = "Predicted")
+abline(0,1)
+abline(mod, col = "blue")
+
+Mgsqrt_krige[1] %>% as.data.frame() %>% ggplot(aes(krige_output.lon, krige_output.lat, colour = krige_output.var1.pred)) +
+  geom_point(size = 4) +
+  my_colour
+```
+
+R squared is bad = 0.1627
+
+hue only = 0.6526   
+value only =  0.1801   
+chroma only = 0.6166  
+
+####Site 2
+
+```{r, warning=F}
+site2<- my_soil_df %>% as.data.frame() %>% filter(site == "site2")
+site2_grid <- my_grid %>% as.data.frame() %>% filter(site == "site2")
+test_dat <- site2 %>% as.data.frame() %>% filter(type == "random")
+
+coordinates(site2) <- c("lon", "lat")
+coordinates(site2_grid) <- c("lon", "lat")
+
+#Ordinary kriging 
+
+
+Mgsqrt_vgm <- autofitVariogram(MgSqrt ~ 1,  site2_grid)
+plot(Mgsqrt_vgm)
+
+Mgsqrt_krige <- autoKrige(MgSqrt ~ 1, site2_grid, site2)
+```
+
+```{r}
+pred <- Mgsqrt_krige[1] %>% as.data.frame() %>%  left_join(test_dat, Mgsqrt_krige, by = c("krige_output.lon" = "lon")) %>% filter(type == "random")
+
+mod <- lm(pred$krige_output.var1.pred ~ pred$MgSqrt)
+summary(mod)
+plot(pred$krige_output.var1.pred ~ pred$MgSqrt, xlab = "Observed", ylab = "Predicted")
+abline(0,1)
+abline(mod, col = "blue")
+
+Mgsqrt_krige[1] %>% as.data.frame() %>% ggplot(aes(krige_output.lon, krige_output.lat, colour = krige_output.var1.pred)) +
+  geom_point(size = 4) +
+  my_colour
+```
+
+R squared is 0.779
+
+####Co-kriging site 2
+
+```{r, warning=F}
+Mgsqrt_vgm <- autofitVariogram(MgSqrt ~ my_hue + value + chroma,  site2_grid)
+plot(Mgsqrt_vgm)
+
+Mgsqrt_krige <- autoKrige(MgSqrt ~ my_hue + value + chroma, site2_grid, site2)
+```
+
+```{r}
+pred <- Mgsqrt_krige[1] %>% as.data.frame() %>%  left_join(test_dat, Mgsqrt_krige, by = c("krige_output.lon" = "lon")) %>% filter(type == "random")
+
+mod <- lm(pred$krige_output.var1.pred ~ pred$MgSqrt)
+summary(mod)
+plot(pred$krige_output.var1.pred ~ pred$MgSqrt, xlab = "Observed", ylab = "Predicted")
+abline(0,1)
+abline(mod, col = "blue")
+
+Mgsqrt_krige[1] %>% as.data.frame() %>% ggplot(aes(krige_output.lon, krige_output.lat, colour = krige_output.var1.pred)) +
+  geom_point(size = 4) +
+  my_colour
+```
+
+r squared = 0.6587
+
+hue only = 0.7771   
+value only = 0.7168   
+chroma only = 0.6869 
+
+####Site 3
+
+```{r, warning=F}
+site3<- my_soil_df %>% as.data.frame() %>% filter(site == "site3")
+site3_grid <- my_grid %>% as.data.frame() %>% filter(site == "site3")
+test_dat <- site3 %>% as.data.frame() %>% filter(type == "random")
+
+coordinates(site3) <- c("lon", "lat")
+coordinates(site3_grid) <- c("lon", "lat")
+
+#Ordinary kriging 
+
+
+Mgsqrt_vgm <- autofitVariogram(MgSqrt ~ 1,  site3_grid)
+plot(Mgsqrt_vgm)
+
+Mgsqrt_krige <- autoKrige(MgSqrt ~ 1, site3_grid, site3)
+```
+
+```{r}
+pred <- Mgsqrt_krige[1] %>% as.data.frame() %>%  left_join(test_dat, Mgsqrt_krige, by = c("krige_output.lon" = "lon")) %>% filter(type == "random")
+
+mod <- lm(pred$krige_output.var1.pred ~ pred$MgSqrt)
+summary(mod)
+plot(pred$krige_output.var1.pred ~ pred$MgSqrt, xlab = "Observed", ylab = "Predicted")
+abline(0,1)
+abline(mod, col = "blue")
+
+Mgsqrt_krige[1] %>% as.data.frame() %>% ggplot(aes(krige_output.lon, krige_output.lat, colour = krige_output.var1.pred)) +
+  geom_point(size = 4) +
+  my_colour
+```
+
+R squared = 0.09812, which is pretty terrible
+
+####Co-kriging site 3
+
+
+```{r, warning=F}
+Mgsqrt_vgm <- autofitVariogram(MgSqrt ~ my_hue + value + chroma,  site3_grid)
+plot(Mgsqrt_vgm)
+
+Mgsqrt_krige <- autoKrige(MgSqrt ~ my_hue + value + chroma, site3_grid, site3)
+```
+
+```{r}
+pred <- Mgsqrt_krige[1] %>% as.data.frame() %>%  left_join(test_dat, Mgsqrt_krige, by = c("krige_output.lon" = "lon")) %>% filter(type == "random")
+
+mod <- lm(pred$krige_output.var1.pred ~ pred$MgSqrt)
+summary(mod)
+plot(pred$krige_output.var1.pred ~ pred$MgSqrt, xlab = "Observed", ylab = "Predicted")
+abline(0,1)
+abline(mod, col = "blue")
+
+Mgsqrt_krige[1] %>% as.data.frame() %>% ggplot(aes(krige_output.lon, krige_output.lat, colour = krige_output.var1.pred)) +
+  geom_point(size = 4) +
+  my_colour
+```
+
+This fits truly badly, but then the variogram does look weird. R squared = -0.09088
+
+hue only = -0.08056   
+value only = 0.09475   
+chroma only = 0.09621   
