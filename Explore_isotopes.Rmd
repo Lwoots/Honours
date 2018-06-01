@@ -1,0 +1,463 @@
+---
+title: "C and N isotopes"
+author: "Lara Wootton"
+date: "5/31/2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+rm(list = ls())
+
+setwd("/Users/larawootton/Documents/Honours/Data")
+
+source("/Users/larawootton/Documents/Honours/Project_analysis/to_be_sourced.R")
+rm(species_df)
+
+if(!require(pacman)){install.packages("pacman", dependencies=TRUE); library(pacman)}
+p_load(dplyr, visdat, ggplot2, RColorBrewer, cowplot, corrplot, knitr)
+
+grid <- my_soil_df %>% filter(type == "grid")
+
+site1 <- grid %>% filter(site == "site1") %>%  mutate(y = sort(as.vector(c(rep(1,6), rep(3,6), rep(5,6), rep(7,6),                                                                    rep(9,6), rep(11,6))), decreasing = T),
+                                                      x = as.vector(rep(seq(1, 11, 2), 6)))
+site2 <- grid %>% filter(site == "site2") %>%  mutate(y = sort(as.vector(c(rep(1,6), rep(3,6), rep(5,6), rep(7,6),                                                                    rep(9,6), rep(11,6))), decreasing = T),
+                                                      x = as.vector(rep(seq(1, 11, 2), 6)))
+site3 <- grid %>% filter(site == "site3") %>%  mutate(y = sort(as.vector(c(rep(1,6), rep(3,6), rep(5,6), rep(7,6),                                                                    rep(9,6), rep(11,6))), decreasing = T),
+                                                      x = as.vector(rep(seq(1, 11, 2), 6)))
+
+#graphical parameters
+theme_set(theme_bw())
+my_theme <- theme(
+  #axis.title.x = element_blank(),
+  axis.text.x = element_blank(),
+  axis.ticks.x = element_blank(),
+  axis.title.y = element_blank(),
+  axis.text.y = element_blank(),
+  axis.ticks.y = element_blank(),
+  panel.grid = element_blank()
+)
+```
+
+Isotopic analysis of soil samples from the Knersvlakte.
+
+```{r, echo=F, fig.height=8, fig.width=8, fig.cap="Pairs plot of all variables"}
+pairs(my_soil_df[,c(31:37)])
+```
+
+```{r, echo=F, fig.cap="Correlation graph. The size of the circles represents the magnitude of correlation between the variables"}
+
+c <- cor(my_soil_df[,31:37], use = "complete")
+corrplot.mixed(c, lower.col = "black")
+```
+
+```{r, echo=F}
+
+N_percent <- my_soil_df %>% summarise(Average = mean(N_perc, na.rm = T),
+                                  SD = sd(N_perc, na.rm = T),
+                                  Median = median(N_perc, na.rm = T),
+                                  Max = max(N_perc, na.rm = T),
+                                  Min = min(N_perc, na.rm = T))
+dN <-  my_soil_df %>% summarise(Average = mean(dN, na.rm = T),
+                                  SD = sd(dN, na.rm = T),
+                                  Median = median(dN, na.rm = T),
+                                  Max = max(dN, na.rm = T),
+                                  Min = min(dN, na.rm = T))
+
+dN_corrected <-  my_soil_df %>% summarise(Average = mean(corr_dN, na.rm = T),
+                                  SD = sd(corr_dN, na.rm = T),
+                                  Median = median(corr_dN, na.rm = T),
+                                  Max = max(corr_dN, na.rm = T),
+                                  Min = min(corr_dN, na.rm = T))
+
+C_percent <- my_soil_df %>% summarise(Average = mean(C_perc, na.rm = T),
+                                  SD = sd(C_perc, na.rm = T),
+                                  Median = median(C_perc, na.rm = T),
+                                  Max = max(C_perc, na.rm = T),
+                                  Min = min(C_perc, na.rm = T))
+dC <-  my_soil_df %>% summarise(Average = mean(dC, na.rm = T),
+                                  SD = sd(dC, na.rm = T),
+                                  Median = median(dC, na.rm = T),
+                                  Max = max(dC, na.rm = T),
+                                  Min = min(dC, na.rm = T))
+
+dC_corrected <-  my_soil_df %>% summarise(Average = mean(corr_dC, na.rm = T),
+                                  SD = sd(corr_dC, na.rm = T),
+                                  Median = median(corr_dC, na.rm = T),
+                                  Max = max(corr_dC, na.rm = T),
+                                  Min = min(corr_dC, na.rm = T))
+C_N_ratio <-  my_soil_df %>% summarise(Average = mean(C_N_ratio, na.rm = T),
+                                  SD = sd(C_N_ratio, na.rm = T),
+                                  Median = median(C_N_ratio, na.rm = T),
+                                  Max = max(C_N_ratio, na.rm = T),
+                                  Min = min(C_N_ratio, na.rm = T))
+
+Variable <- c("%N", "dN", "dN corrected", "%C", "dC", "dC corrected", "C:N ratio")
+stats <- rbind(N_percent, dN, dN_corrected, C_percent, dC, dC_corrected, C_N_ratio)
+stats <- round(stats, 2)
+kable(data.frame(Variable, stats))
+rm(N_percent, dN_corrected, C_percent, dC_corrected, C_N_ratio, dN, dC)
+```
+
+
+###Individual variables {.tabset .tabset-fad}
+
+####%N
+
+```{r, echo=F, fig.width=9, fig.height=4}
+par(mfrow = c(1,3))
+hist(grid$N_perc, xlab = "%N", main = "")
+boxplot(grid$N_perc, ylab = "%N")
+points(mean(grid$N_perc, na.rm = T), pch = 19, col = "blue", cex = 1.2)
+dotchart(grid$N_perc, lcolor = "white", ylab = "Order of data", xlab = "%N")
+```
+
+```{r, echo=F, fig.width=12, fig.height=4}
+my_colour <- scale_color_distiller(palette = "YlOrRd", limits = c(min(my_soil_df$N_perc), max(my_soil_df$N_perc)), direction = 0)
+
+leg <- ggplot(site1,
+              aes(x, y,
+                  colour = N_perc)) +
+  geom_point(cex = 9) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 1")
+p1 <- ggplot(site1,
+             aes(x, y,
+                 colour = N_perc)) +
+              geom_point(cex = 10, shape = 15) +
+              my_theme +
+              my_colour +
+              labs(x = "Site 1") +
+  theme(legend.position = "none")
+
+p2 <- ggplot(site2,
+             aes(x, y,
+                 colour = N_perc)) +
+  geom_point(cex = 10, shape = 15) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 2") +
+  theme(legend.position = "none")
+
+p3 <- ggplot(site3,
+             aes(x, y,
+                 colour = N_perc)) +
+  geom_point(cex = 10, shape = 15) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 3") +
+  theme(legend.position = "none")
+  
+legend <- get_legend(leg)
+plot_grid(p1,p2,p3, legend, nrow = 1, rel_widths = c(0.9,0.9,0.9,0.2)) 
+```
+
+####dN
+
+```{r, echo=F, fig.width=9, fig.height=4}
+par(mfrow = c(1,3))
+hist(grid$dN, xlab = "dN", main = "")
+boxplot(grid$dN, ylab = "dN")
+points(mean(grid$dN, na.rm = T), pch = 19, col = "blue", cex = 1.2)
+dotchart(grid$dN, lcolor = "white", ylab = "Order of data", xlab = "dN")
+```
+
+```{r, echo=F, fig.width=12, fig.height=4}
+my_colour <- scale_color_distiller(palette = "YlOrRd", limits = c(min(my_soil_df$dN), max(my_soil_df$dN)), direction = 0)
+
+leg <- ggplot(site1,
+              aes(x, y,
+                  colour = dN)) +
+  geom_point(cex = 9) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 1")
+p1 <- ggplot(site1,
+             aes(x, y,
+                 colour = dN)) +
+              geom_point(cex = 10, shape = 15) +
+              my_theme +
+              my_colour +
+              labs(x = "Site 1") +
+  theme(legend.position = "none")
+
+p2 <- ggplot(site2,
+             aes(x, y,
+                 colour = dN)) +
+  geom_point(cex = 10, shape = 15) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 2") +
+  theme(legend.position = "none")
+
+p3 <- ggplot(site3,
+             aes(x, y,
+                 colour = dN)) +
+  geom_point(cex = 10, shape = 15) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 3") +
+  theme(legend.position = "none")
+  
+legend <- get_legend(leg)
+plot_grid(p1,p2,p3, legend, nrow = 1, rel_widths = c(0.9,0.9,0.9,0.2)) 
+```
+
+####dN corrected
+
+```{r, echo=F, fig.width=9, fig.height=4}
+par(mfrow = c(1,3))
+hist(grid$corr_dN, xlab = "dN corrected", main = "")
+boxplot(grid$corr_dN, ylab = "dN corrected")
+points(mean(grid$corr_dN, na.rm = T), pch = 19, col = "blue", cex = 1.2)
+dotchart(grid$corr_dN, lcolor = "white", ylab = "Order of data", xlab = "dN corrected")
+```
+
+```{r, echo=F, fig.width=12, fig.height=4}
+my_colour <- scale_color_distiller(palette = "YlOrRd", limits = c(min(my_soil_df$corr_dN), max(my_soil_df$corr_dN)), direction = 0)
+
+leg <- ggplot(site1,
+              aes(x, y,
+                  colour = corr_dN)) +
+  geom_point(cex = 9) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 1")
+p1 <- ggplot(site1,
+             aes(x, y,
+                 colour = corr_dN)) +
+              geom_point(cex = 10, shape = 15) +
+              my_theme +
+              my_colour +
+              labs(x = "Site 1") +
+  theme(legend.position = "none")
+
+p2 <- ggplot(site2,
+             aes(x, y,
+                 colour = corr_dN)) +
+  geom_point(cex = 10, shape = 15) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 2") +
+  theme(legend.position = "none")
+
+p3 <- ggplot(site3,
+             aes(x, y,
+                 colour = corr_dN)) +
+  geom_point(cex = 10, shape = 15) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 3") +
+  theme(legend.position = "none")
+  
+legend <- get_legend(leg)
+plot_grid(p1,p2,p3, legend, nrow = 1, rel_widths = c(0.9,0.9,0.9,0.2)) 
+```
+
+####%C
+
+```{r, echo=F, fig.width=9, fig.height=4}
+par(mfrow = c(1,3))
+hist(grid$C_perc, xlab = "%C", main = "")
+boxplot(grid$C_perc, ylab = "%C")
+points(mean(grid$C_perc, na.rm = T), pch = 19, col = "blue", cex = 1.2)
+dotchart(grid$C_perc, lcolor = "white", ylab = "Order of data", xlab = "%C")
+```
+
+```{r, echo=F, fig.width=12, fig.height=4}
+my_colour <- scale_color_distiller(palette = "YlOrRd", limits = c(min(my_soil_df$C_perc), max(my_soil_df$C_perc)), direction = 0)
+
+leg <- ggplot(site1,
+              aes(x, y,
+                  colour = C_perc)) +
+  geom_point(cex = 9) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 1")
+p1 <- ggplot(site1,
+             aes(x, y,
+                 colour = C_perc)) +
+              geom_point(cex = 10, shape = 15) +
+              my_theme +
+              my_colour +
+              labs(x = "Site 1") +
+  theme(legend.position = "none")
+
+p2 <- ggplot(site2,
+             aes(x, y,
+                 colour = C_perc)) +
+  geom_point(cex = 10, shape = 15) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 2") +
+  theme(legend.position = "none")
+
+p3 <- ggplot(site3,
+             aes(x, y,
+                 colour = C_perc)) +
+  geom_point(cex = 10, shape = 15) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 3") +
+  theme(legend.position = "none")
+  
+legend <- get_legend(leg)
+plot_grid(p1,p2,p3, legend, nrow = 1, rel_widths = c(0.9,0.9,0.9,0.2)) 
+```
+
+####dC
+
+```{r, echo=F, fig.width=9, fig.height=4}
+par(mfrow = c(1,3))
+hist(grid$dC, xlab = "dC", main = "")
+boxplot(grid$dC, ylab = "dC")
+points(mean(grid$dC, na.rm = T), pch = 19, col = "blue", cex = 1.2)
+dotchart(grid$dC, lcolor = "white", ylab = "Order of data", xlab = "dC")
+```
+
+```{r, echo=F, fig.width=12, fig.height=4}
+my_colour <- scale_color_distiller(palette = "YlOrRd", limits = c(min(my_soil_df$dC), max(my_soil_df$dC)), direction = 0)
+
+leg <- ggplot(site1,
+              aes(x, y,
+                  colour = dC)) +
+  geom_point(cex = 9) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 1")
+p1 <- ggplot(site1,
+             aes(x, y,
+                 colour = dC)) +
+              geom_point(cex = 10, shape = 15) +
+              my_theme +
+              my_colour +
+              labs(x = "Site 1") +
+  theme(legend.position = "none")
+
+p2 <- ggplot(site2,
+             aes(x, y,
+                 colour = dC)) +
+  geom_point(cex = 10, shape = 15) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 2") +
+  theme(legend.position = "none")
+
+p3 <- ggplot(site3,
+             aes(x, y,
+                 colour = dC)) +
+  geom_point(cex = 10, shape = 15) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 3") +
+  theme(legend.position = "none")
+  
+legend <- get_legend(leg)
+plot_grid(p1,p2,p3, legend, nrow = 1, rel_widths = c(0.9,0.9,0.9,0.2)) 
+```
+
+
+
+
+####dC corrected
+
+```{r, echo=F, fig.width=9, fig.height=4}
+par(mfrow = c(1,3))
+hist(grid$corr_dC, xlab = "dC", main = "")
+boxplot(grid$corr_dC, ylab = "dC")
+points(mean(grid$corr_dC, na.rm = T), pch = 19, col = "blue", cex = 1.2)
+dotchart(grid$corr_dC, lcolor = "white", ylab = "Order of data", xlab = "dC corrected")
+```
+
+```{r, echo=F, fig.width=12, fig.height=4}
+my_colour <- scale_color_distiller(palette = "YlOrRd", limits = c(min(my_soil_df$corr_dC), max(my_soil_df$corr_dC)), direction = 0)
+
+leg <- ggplot(site1,
+              aes(x, y,
+                  colour = corr_dC)) +
+  geom_point(cex = 9) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 1")
+p1 <- ggplot(site1,
+             aes(x, y,
+                 colour = corr_dC)) +
+              geom_point(cex = 10, shape = 15) +
+              my_theme +
+              my_colour +
+              labs(x = "Site 1") +
+  theme(legend.position = "none")
+
+p2 <- ggplot(site2,
+             aes(x, y,
+                 colour = corr_dC)) +
+  geom_point(cex = 10, shape = 15) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 2") +
+  theme(legend.position = "none")
+
+p3 <- ggplot(site3,
+             aes(x, y,
+                 colour = corr_dC)) +
+  geom_point(cex = 10, shape = 15) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 3") +
+  theme(legend.position = "none")
+  
+legend <- get_legend(leg)
+plot_grid(p1,p2,p3, legend, nrow = 1, rel_widths = c(0.9,0.9,0.9,0.2)) 
+```
+
+####C:N ratio
+
+```{r, echo=F, fig.width=9, fig.height=4}
+par(mfrow = c(1,3))
+hist(grid$C_N_ratio, xlab = "C:N ratio", main = "")
+boxplot(grid$C_N_ratio, ylab = "C:N ratio")
+points(mean(grid$C_N_ratio, na.rm = T), pch = 19, col = "blue", cex = 1.2)
+dotchart(grid$C_N_ratio, lcolor = "white", ylab = "Order of data", xlab = "C:N ratio")
+```
+
+```{r, echo=F, fig.width=12, fig.height=4}
+my_colour <- scale_color_distiller(palette = "YlOrRd", limits = c(min(my_soil_df$C_N_ratio), max(my_soil_df$C_N_ratio)), direction = 0)
+
+leg <- ggplot(site1,
+              aes(x, y,
+                  colour = C_N_ratio)) +
+  geom_point(cex = 9) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 1")
+p1 <- ggplot(site1,
+             aes(x, y,
+                 colour = C_N_ratio)) +
+              geom_point(cex = 10, shape = 15) +
+              my_theme +
+              my_colour +
+              labs(x = "Site 1") +
+  theme(legend.position = "none")
+
+p2 <- ggplot(site2,
+             aes(x, y,
+                 colour = C_N_ratio)) +
+  geom_point(cex = 10, shape = 15) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 2") +
+  theme(legend.position = "none")
+
+p3 <- ggplot(site3,
+             aes(x, y,
+                 colour = C_N_ratio)) +
+  geom_point(cex = 10, shape = 15) +
+  my_theme +
+  my_colour +
+  labs(x = "Site 3") +
+  theme(legend.position = "none")
+  
+legend <- get_legend(leg)
+plot_grid(p1,p2,p3, legend, nrow = 1, rel_widths = c(0.9,0.9,0.9,0.2)) 
+```
