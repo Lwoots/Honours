@@ -5,19 +5,38 @@ source("/Users/larawootton/Documents/Honours/Project_analysis/to_be_sourced.R")
 if(!require(pacman)){install.packages("pacman", dependencies=TRUE); library(pacman)}
 p_load(dplyr, dismo, gbm, foreach, doParallel, TeachingDemos)
 
-glimpse(my_soil_df)
 
 #Select important environmental variables
 nb_soil_var <- my_soil_df %>% select(plot:lat, type:percent_over1, value:Very_coarse_sand, conductivity_ms, ph_kcl, N_perc, corr_dN:C_perc, corr_dC:Q_cover)
 glimpse(nb_soil_var)
 
 #Select important species
-nb_sp <- species_df %>% select(1,6:10, 12, 16:17, 20, 22, 24,28:33)
+nb_sp <- species_df %>% select(1,6, 8:10, 12, 16:17, 22, 24,28:31, 33, 43, 54)
 nb_sp[is.na(nb_sp)] <- 0
+glimpse(nb_sp)
+
+names(nb_sp) <- c("plot",
+                  "Ruschia_burtoniae", 
+                  "C_spissum", 
+                  "Conophytum_calculus", 
+                  "A_fissum", 
+                  "A_delaetii", 
+                  "Galenia_fruticosa",
+                  "Conophytum_subfenestratum",
+                  "Dicrocaulon_sp",
+                  "Ruschia_comptonii",
+                  "Drosanthemum_diversifolium",
+                  "Crassula_muscosa",
+                  "Tylecodon_pygmaeus",
+                  "Oophytum_sp",
+                  "A_framesii",
+                  "C_staminodiosum",
+                  "species_richness"
+                  )
 
 #Create presence-absence matrix
 
-prez <- ifelse(nb_sp[,2:length(nb_sp)] > 0, 1, 0)
+prez <- ifelse(nb_sp[,2:16] > 0, 1, 0)
 prez_df <- data.frame(plot = nb_sp[,1], prez)
 my_prez <- left_join(prez_df, nb_soil_var, by = "plot")
 my_prez <- my_prez %>% filter(type == "grid" | type == "random") %>% select(-type)
@@ -60,6 +79,7 @@ brt.simp <- gbm.simplify(brt_results, n.drops = "auto")
 summary(brt.simp)
 
 
+#Optimisation ####
 #Find optimal settings for BRTs - code courtesy Mike
 
 cores <- detectCores()
@@ -162,3 +182,42 @@ subfen_poi <- read.csv("C_subfen_pos_train_results_out.csv")
 r_burt_poi <- read.csv("R_burt_pois_train_results_out.csv")
 delaetii_poi <- read.csv("A_delaetii_pois_train_results_out.csv")
 spissum_poi <- read.csv("C_spissum_pois_train_results_out.csv")
+
+
+#The models ####
+
+
+#Presence - absence
+
+glimpse(my_prez)
+
+#Set BRT parameters
+brt_var <- 17:49
+response <- 14
+tree.com <- 4
+learn <- 0.001
+
+
+
+
+brt_results <- gbm.step(my_prez,
+                        gbm.x = brt_var,
+                        gbm.y = response,
+                        plot.main = TRUE,
+                        family = "bernoulli",
+                        step.size = 50,
+                        tree.complexity = tree.com,
+                        learning.rate = learn,
+                        max.trees=10000,
+                        n.folds = 10,
+                        bag.fraction = 0.5
+)
+
+
+(pseudo_r2 <- 1-(brt_results$cv.statistics$deviance.mean/brt_results$self.statistics$mean.null))
+
+summary(brt_results)
+gbm.plot(brt_results)
+
+
+
