@@ -221,3 +221,39 @@ gbm.plot(brt_results)
 
 
 
+
+results <- list()
+psuedoR2 <- matrix(nrow = 16, ncol = 2, dimnames = list(NULL, c("species", "R2")))
+
+
+for (i in 2:16) {
+  
+  brt_results <- gbm.step(my_prez,
+                          gbm.x = brt_var,
+                          gbm.y = i,
+                          plot.main = TRUE,
+                          family = "bernoulli",
+                          step.size = 50,
+                          tree.complexity = tree.com,
+                          learning.rate = learn,
+                          max.trees=10000,
+                          n.folds = 10,
+                          bag.fraction = 0.5
+  )
+  
+  species <- names(my_prez[i])
+  
+  results[[species]] <- brt_results
+  
+  psuedoR2[i,] <- c(species = species, R2 = 1-(brt_results$cv.statistics$deviance.mean/brt_results$self.statistics$mean.null))
+  
+  pdf(paste(getwd(), "/BRT_plots/BRTprez_", species, ".pdf", sep = ""), width=6, height=6)
+  summary(brt_results)
+  text(species, x = 5, y = 3)
+  dev.off()
+}
+
+
+results
+as.data.frame(psuedoR2)
+
