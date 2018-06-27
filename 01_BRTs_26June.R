@@ -69,10 +69,10 @@ cores <- detectCores()
 step.train.fx = function(tree.com, learn){
   #set seed for reproducibility
   char2seed("StackOverflow", set = TRUE)
-  k1 <- gbm.step(data = my_prez, 
+  k1 <- gbm.step(data = my_data, 
                  gbm.x = brt_var, 
-                 gbm.y = 7,
-                 family = "bernoulli", 
+                 gbm.y = 4,
+                 family = "poisson", 
                  tree.complexity = tree.com,
                  learning.rate = learn,
                  bag.fraction = 0.7,
@@ -138,4 +138,27 @@ train.results[,4:7]<-round(train.results[,4:7],digits=3)
 train.results_out <-train.results[order(train.results$cv.dev,-train.results$cv.AUC, -train.results$AUC),]
 names(train.results_out)
 
-write.csv(train.results_out, "/Users/larawootton/Documents/Honours/Data/BRT_outputs/A_delaetii_ben_train_results_out")
+write.csv(train.results_out, "/Users/larawootton/Documents/Honours/Data/BRT_outputs/C_spissum_pois_train_results_out.csv")
+
+
+
+#A_delaetii - LR = 0.0050, tc = 2, cv.dev = 1.026, bernoulli
+#R_burtoniae - LR = 0.0005 - 0.0010, tc = 1, cv.dev = 0.435, bernoulli, some didn't converge
+#Spissum - LR = 0.0010 - 0.0050, tc = 5, cv.dev = 0.962, bernoulli, some didn't converge
+#For bernoulli use TC of 4 and LR of 0.001
+#Poisson use TC = 2, LR = 0.005
+
+
+setwd("/Users/larawootton/Documents/Honours/Data/BRT_outputs")
+
+delaetii <- read.csv("A_delaetii_ben_train_results_out.csv")
+r_burton <- read.csv("R_burtoniae_ber_train_results_out.csv")
+dicrocaulon <- read.csv("Dicrocaulon_ber_train_results_out.csv")
+spissum <- read.csv("C_spissum_ber_train_results_out.csv")
+subfen <- read.csv("C_subfen_ber_train_results_out.csv")
+
+
+subfen_poi <- read.csv("C_subfen_pos_train_results_out.csv")
+r_burt_poi <- read.csv("R_burt_pois_train_results_out.csv")
+delaetii_poi <- read.csv("A_delaetii_pois_train_results_out.csv")
+spissum_poi <- read.csv("C_spissum_pois_train_results_out.csv")
