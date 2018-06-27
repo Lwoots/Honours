@@ -192,34 +192,11 @@ spissum_poi <- read.csv("C_spissum_pois_train_results_out.csv")
 glimpse(my_prez)
 
 #Set BRT parameters
+
 brt_var <- 17:49
 response <- 14
 tree.com <- 4
 learn <- 0.001
-
-
-
-
-brt_results <- gbm.step(my_prez,
-                        gbm.x = brt_var,
-                        gbm.y = response,
-                        plot.main = TRUE,
-                        family = "bernoulli",
-                        step.size = 50,
-                        tree.complexity = tree.com,
-                        learning.rate = learn,
-                        max.trees=10000,
-                        n.folds = 10,
-                        bag.fraction = 0.5
-)
-
-
-(pseudo_r2 <- 1-(brt_results$cv.statistics$deviance.mean/brt_results$self.statistics$mean.null))
-
-summary(brt_results)
-gbm.plot(brt_results)
-
-
 
 
 results <- list()
@@ -256,4 +233,49 @@ for (i in 2:16) {
 
 results
 as.data.frame(psuedoR2)
+
+
+#Abundance ####
+
+glimpse(my_data)
+
+#Set BRT parameters
+
+brt_var <- 18:50
+tree.com <- 2
+learn <- 0.005
+
+
+results_abundance <- list()
+psuedoR2_abundance <- matrix(nrow = 17, ncol = 2, dimnames = list(NULL, c("species", "R2")))
+
+
+for (i in 2:17) {
+  
+  brt_results <- gbm.step(my_data,
+                          gbm.x = brt_var,
+                          gbm.y = i,
+                          plot.main = TRUE,
+                          family = "poisson",
+                          step.size = 50,
+                          tree.complexity = tree.com,
+                          learning.rate = learn,
+                          max.trees=10000,
+                          n.folds = 10,
+                          bag.fraction = 0.5
+  )
+  
+  species <- names(my_data[i])
+  
+  results_abundance[[species]] <- brt_results
+  
+  psuedoR2_abundance[i,] <- c(species = species, 
+                              R2 = 1-(brt_results$cv.statistics$deviance.mean/brt_results$self.statistics$mean.null))
+  
+}
+
+
+results
+as.data.frame(psuedoR2_abundance)
+
 
