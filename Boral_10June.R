@@ -16,13 +16,16 @@ source("/Users/larawootton/Documents/Honours/Project_analysis/to_be_sourced.R")
 nb_sp <- species_df %>% left_join(my_soil_df, by = "plot") %>% filter(!is.na(type)) %>%  select(plot, ruschia_burtoniae, c_spissum, a_delaetii, oophytum, a_fissum, dicrocaulon, drosanthemum_diversifolium, a_framesii, mesemb_1, c_subfenestratum, co_calculus, galenia_fruticosa, crassula_muscosa, tylecodon_pygmaeus, cephalophyllum_staminodiosum) 
 
 enviro_var <- my_soil_df %>% 
+  filter(!is.na(type)) %>%
   select(c(1, 13:21, 27:28, 30:31, 34, 37:42))
 
 
-sp_occ <- nb_sp %>% apply(2, function(x) ifelse(is.na(x), 0, 1))
+sp_occ <- nb_sp[,2:16] %>% apply(2, function(x) ifelse(is.na(x), 0, 1))
 
 all_dat <- cbind(sp_occ, enviro_var)
 all_dat <- na.omit(all_dat) %>% select(-plot)
+
+#Full model ####
 
 #Covariates
 covar <- all_dat %>% 
@@ -39,7 +42,8 @@ mod1 <- boral(sp,
 
 summary(mod1)
 lvsplot(mod1)
-coefsplot(mod1)
+coefsplot("Q_cover", mod1)
+
 
 envcors <- get.enviro.cor(mod1)
 rescors <- get.residual.cor(mod1)
@@ -47,12 +51,141 @@ rescors <- get.residual.cor(mod1)
 corrplot(envcors$cor)
 corrplot(envcors$sig.cor)
 corrplot(rescors$correlation, order = "AOE", type = "lower")
-corrplot.mixed(rescors$sig.correlaton)
+corrplot(rescors$sig.correlaton)
+fitted.boral(mod1)
+var <- calc.varpart(mod1)
+plot(var$varpart.X)
+
+fitted(mod1)
+plot.boral(mod1)
 
 
-mod2 <- boral(sp_pres, num.lv = 3, family = "binomial")
-lvsplot(mod2)
-coefsplot(mod2)
+save(mod1, file = "mod1_6Aug.rda")
+load("mod1_6Aug.rda")
+
+#Model without sandy species ####
+
+covar <- all_dat %>% 
+  select(c(16:35)) %>% 
+  as.matrix()
+
+sp <- as.matrix(all_dat[,c(1:8, 10:14)])
+
+less_sandsp_7Aug <- boral(sp, 
+              X = covar,
+              family = "binomial",
+              num.lv = 3,
+              save.model = T)
+summary(less_sandsp_7Aug)
+lvsplot(less_sandsp_7Aug)
+coefsplot("Q_cover", less_sandsp_7Aug)
+
+
+envcors <- get.enviro.cor(less_sandsp_7Aug)
+rescors <- get.residual.cor(less_sandsp_7Aug)
+corrplot(envcors$cor)
+corrplot(envcors$sig.cor)
+corrplot(rescors$correlation, order = "AOE", type = "lower")
+corrplot(rescors$sig.correlaton)
+
+calc.varpart(less_sandsp_7Aug)
+
+save(less_sandsp_7Aug, file = "less_sandsp_7Aug.rda")
+
+#Quartz species only ####
+
+sp <- as.matrix(all_dat[,c(2:8, 10:11, 13:14)])
+
+quartz_7Aug <- boral(
+  sp,
+  X = covar,
+  family = "binomial",
+  num.lv = 3,
+  save.model = T
+)
+summary(quartz_7Aug)
+lvsplot(quartz_7Aug)
+coefsplot("acidity", quartz_7Aug)
+
+
+envcors <- get.enviro.cor(quartz_7Aug)
+rescors <- get.residual.cor(quartz_7Aug)
+corrplot(envcors$cor)
+corrplot(envcors$sig.cor)
+corrplot(rescors$correlation, order = "AOE", type = "lower")
+corrplot(rescors$sig.correlaton)
+
+calc.varpart(quartz_7Aug)
+
+quartz_7Aug$geweke.diag$prop.exceed
+
+quartz_7Aug$prior.control
+
+save(quartz_7Aug, file = "quartz_7Aug.rda")
+
+#Abundance all sp based on grid plots ####
+
+nb_sp_grid_abn <- species_df %>%
+  left_join(my_soil_df, by = "plot") %>%
+  filter(type == "grid") %>%
+  select(
+    plot,
+    ruschia_burtoniae,
+    c_spissum,
+    a_delaetii,
+    oophytum,
+    a_fissum,
+    dicrocaulon,
+    drosanthemum_diversifolium,
+    a_framesii,
+    mesemb_1,
+    c_subfenestratum,
+    co_calculus,
+    galenia_fruticosa,
+    crassula_muscosa,
+    tylecodon_pygmaeus,
+    cephalophyllum_staminodiosum
+  ) 
+
+nb_sp_grid_abn[is.na(nb_sp_grid_abn)] <- 0 #replace NA with zero
+
+enviro_var <- my_soil_df %>% 
+  filter(type == "grid") %>%
+  select(c(1, 13:21, 27:28, 30:31, 34, 37:42)) 
+
+all_dat_abn <- left_join(nb_sp_grid_abn, enviro_var, by = "plot") %>% select(-plot)
+
+
+
+
+ 
+
+
+enviro_var <- my_soil_df %>% 
+  filter(type == "grid") %>%
+  select(c(1, 13:21, 27:28, 30:31, 34, 37:42)) %>% 
+  as.matrix()
+
+grid_abn_allsp_8Aug <- boral(
+  nb_sp_grid_abn,
+  X = enviro_var,
+  family = "negative.binomial",
+  num.lv = 3,
+  save.model = T
+)
+
+which(is.na(enviro_var))
+
+#Ordination
+
+ord <- boral(sp,
+              family = "binomial",
+              num.lv = 2,
+              save.model = T)
+
+lvsplot(ord)
+
+
 
 #Spider tutorial
 
