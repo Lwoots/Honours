@@ -156,25 +156,63 @@ enviro_var <- my_soil_df %>%
 all_dat_abn <- left_join(nb_sp_grid_abn, enviro_var, by = "plot") %>% select(-plot)
 
 
-
+all_dat_abn <- na.omit(all_dat_abn)
 
  
-
-
-enviro_var <- my_soil_df %>% 
-  filter(type == "grid") %>%
-  select(c(1, 13:21, 27:28, 30:31, 34, 37:42)) %>% 
-  as.matrix()
+sp <- all_dat_abn %>% select(1:15) %>% as.matrix()
+covar <- all_dat_abn %>% select(16:35) %>% as.matrix()
 
 grid_abn_allsp_8Aug <- boral(
-  nb_sp_grid_abn,
-  X = enviro_var,
+  sp,
+  X = covar,
   family = "negative.binomial",
   num.lv = 3,
   save.model = T
 )
 
-which(is.na(enviro_var))
+summary(grid_abn_allsp_8Aug)
+lvsplot(grid_abn_allsp_8Aug)
+coefsplot("acidity", grid_abn_allsp_8Aug)
+
+
+envcors <- get.enviro.cor(grid_abn_allsp_8Aug)
+rescors <- get.residual.cor(grid_abn_allsp_8Aug)
+corrplot(envcors$cor)
+corrplot(envcors$sig.cor)
+corrplot(rescors$correlation, order = "AOE", type = "lower")
+corrplot(rescors$sig.correlaton)
+
+calc.varpart(grid_abn_allsp_8Aug)
+
+plot.boral(grid_abn_allsp_8Aug)
+
+grid_abn_allsp_8Aug$geweke.diag$prop.exceed
+
+plot(envcors$cor, rescors$correlation)
+plot(envcors$sig.cor, rescors$sig.correlaton)
+
+
+save(grid_abn_allsp_8Aug, file = "grid_abn_allsp_8Aug.rda")
+
+#predict random plots
+
+test_dat <- my_soil_df %>% 
+  filter(type == "random") %>%
+  select(c(13:21, 27:28, 30:31, 34, 37:42)) %>% 
+  na.omit() %>% 
+  as.matrix()
+
+which(is.na(test_dat))
+
+pred <- predict.boral(grid_abn_allsp_8Aug, newX = test_dat, predict.type = "marginal")
+
+hist(pred$linpred)
+ep <- exp(pred$linpred)
+hist(ep)
+
+sum(species_df$ruschia_burtoniae, na.rm = T)
+
+predict(grid_abn_allsp_8Aug, test_dat, type = "response")
 
 #Ordination
 
@@ -197,6 +235,16 @@ y <- spider$abund
 fit.lvmp <- boral(y = y, family = "poisson", num.lv = 2, row.eff = "fixed")
 X <- scale(spider$x)
 fit.Xnb <- boral(y = y, X = X, family = "negative.binomial", num.lv = 2)
+example_mcmc_control <- list(n.burnin = 10, n.iteration = 100, 
+                             n.thin = 1)
+
+spiderfit_nb <- boral(y, X = X, family = "negative.binomial", 
+                      row.eff = "random", num.lv = 2, 
+                      mcmc.control = example_mcmc_control, save.model = TRUE)
+
+newX <- rnorm(100, mean = rep(0,ncol(X)))
+new_row_ids <- matrix(sample(1:28,100,replace=TRUE), 100, 1)
+getmargpreds <- predict(spiderfit_nb, newX = newX, predict.type = "marginal")
 
 
 
