@@ -59,6 +59,9 @@ plot(var$varpart.X)
 fitted(mod1)
 plot.boral(mod1)
 
+mod_fit <- fitted(mod1)
+pred <- as.data.frame(mod_fit$out)
+plot(jitter(pred$tylecodon_pygmaeus) ~ jitter(all_dat$tylecodon_pygmaeus))
 
 save(mod1, file = "mod1_6Aug.rda")
 load("mod1_6Aug.rda")
@@ -91,6 +94,7 @@ corrplot(rescors$sig.correlaton)
 calc.varpart(less_sandsp_7Aug)
 
 save(less_sandsp_7Aug, file = "less_sandsp_7Aug.rda")
+
 
 #Quartz species only ####
 
@@ -279,6 +283,8 @@ grid_abn_allsp_no_colin_10Aug <- boral(
   save.model = T
 )
 
+save(grid_abn_allsp_no_colin_10Aug, file = "grid_abn_allsp_no_colin_10Aug.rda")
+
 summary(grid_abn_allsp_no_colin_10Aug)
 
 
@@ -295,7 +301,7 @@ corrplot(envcors$sig.cor)
 corrplot(rescors$correlation, order = "AOE", type = "lower")
 corrplot(rescors$sig.correlaton)
 
-mod_fit <- fitted.boral(grid_abn_allsp_no_colin_10Aug)
+mod_fit <- fitted.boral(grid_abn_allsp_no_colin_10Aug, est = "mean")
 pred <- as.data.frame(mod_fit$out)
 plot(pred$c_spissum ~ all_dat_abn$c_spissum)
 abline(0, 1)
@@ -304,125 +310,70 @@ plot(pred$galenia_fruticosa ~ all_dat_abn$galenia_fruticosa)
 
 which(pred$oophytum == max(pred$oophytum))
 
-#Spider tutorial
-
-
-data("spider")
-
-y <- spider$abund
-
-fit.lvmp <- boral(y = y, family = "poisson", num.lv = 2, row.eff = "fixed")
-X <- scale(spider$x)
-fit.Xnb <- boral(y = y, X = X, family = "negative.binomial", num.lv = 2)
-example_mcmc_control <- list(n.burnin = 10, n.iteration = 100, 
-                             n.thin = 1)
-
-spiderfit_nb <- boral(y, X = X, family = "negative.binomial", 
-                      row.eff = "random", num.lv = 2, 
-                      mcmc.control = example_mcmc_control, save.model = TRUE)
-
-newX <- rnorm(100, mean = rep(0,ncol(X)))
-new_row_ids <- matrix(sample(1:28,100,replace=TRUE), 100, 1)
-getmargpreds <- predict(spiderfit_nb, newX = newX, predict.type = "marginal")
+grid_abn_allsp_no_colin_10Aug$geweke.diag
 
 
 
-species_df <- species_df %>% select(-c(Q_cover, X, site, transect, lampranthus))
-b <- species_df[4:16]
-glimpse(b)
-mod3 <- boral(y = b, family = "poisson", num.lv = 2, row.eff = "fixed")
-plot(mod3, ask = F, mfrow = c(2,2))
-lvsplot(mod3)
+#Smaller subset ####
+
+sp <- all_dat_abn %>% select(c(2:8, 10:11, 13:14)) %>% as.matrix()
+covar <- all_dat_abn %>% select(16:19, 23:36) %>% as.matrix()
 
 
-dat <- left_join(species_df, my_soil_df, by = c("plot", "lat", "lon", "site"))
-dat <- dat %>% filter(!is.na(type))
-dat <- dat %>% select(-c(Q_cover, X, site, transect, lampranthus))
-
-b <- dat[,4:22]
-
-v <- scale(dat[,c(58:64, 73, 75)])
-
-mod4 <- boral(y = b, X = v, family = "negative.binomial", num.lv = 3, save.model = T)
-plot(mod4)
-lvsplot(mod4)
-
-envcors <- get.enviro.cor(mod4)
-rescors <- get.residual.cor(mod4)
-
-
-library(corrplot)
-corrplot(envcors$cor, type = "lower", diag = F, title = "Correlations due
-         to covariates", mar = c(3,0.5,2,1), tl.srt = 45)
-corrplot(rescors$cor, type = "lower", diag = F, title = "Residual correlati
-ons", mar = c(3,0.5,2,1), tl.srt = 45)
-
-
-# 22 July ####
-
-sp <- species_df %>% select(ruschia_burtoniae, c_spissum, a_delaetii, c_subfenestratum, dicrocaulon, drosanthemum_diversifolium, plot) 
-
-vars <- my_soil_df %>% select(acidity, Mg, Clay, K, C_N_ratio, conductivity_ms, lon, lat, drainage, plot, type) %>% na.omit
-
-testdat <- left_join(sp, vars, by = "plot") %>% filter(!is.na(type)) %>% select(-type)
-
-y <- as.matrix(testdat[,1:6])
-X <- as.matrix(testdat[,8:16])
-
-my_boral_abn <- boral(y, 
-                      X, 
-                      family = "negative.binomial", 
-                      num.lv = 2,
-                      save.model = T
-                      )
-glimpse(my_boral_abn)
-
-summary(my_boral_abn)
-plot(my_boral_abn)
-
-lvsplot(my_boral_abn)
-
-
-rescorr <- get.residual.cor(my_boral_abn)
-corrplot(rescorr$correlation, diag = F, type = "lower", title = "Residual correlations from LVM", method = "color", tl.srt = 45)
-
-corrplot(rescorr$sig.correlaton, diag = F, type = "lower", title = "Residual correlations from LVM", method = "color", tl.srt = 45)
-
-
-envcorr <- get.enviro.cor(my_boral_abn)
-
-corrplot(envcorr$cor)
-
-
-#Occurrence
-
-y_occ <- ifelse(y>0,1,0)
-
-my_boral_occ <- boral(y_occ, 
-                      X, 
-                      family = "binomial", 
-                      num.lv = 2,
-                      save.model = T
+subset_10Aug <- boral(
+  sp,
+  X = covar,
+  family = "negative.binomial",
+  num.lv = 2,
+  save.model = T
 )
 
+save(subset_10Aug, file = "subset_10Aug.rda")
+plot.boral(subset_10Aug)
 
-summary(my_boral_occ)
-plot(my_boral_occ)
+summary(subset_10Aug)
 
-lvsplot(my_boral_occ)
+mod_fit <- fitted.boral(subset_10Aug, est = "mean")
+pred <- as.data.frame(mod_fit$out)
+plot(pred$c_spissum ~ all_dat_abn$c_spissum)
+plot(pred$a_delaetii ~ all_dat_abn$a_delaetii)
+plot(pred$oophytum[-13] ~ all_dat_abn$oophytum[-13])
+plot(pred$c_subfenestratum ~ all_dat_abn$c_subfenestratum)
+plot(pred$a_fissum ~ all_dat_abn$a_fissum)
 
-
-rescorr <- get.residual.cor(my_boral_occ)
-corrplot(rescorr$correlation, diag = F, type = "lower", title = "Residual correlations from LVM", method = "color", tl.srt = 45)
-
-corrplot(rescorr$sig.correlaton, diag = F, type = "lower", title = "Residual correlations from LVM", method = "color", tl.srt = 45)
-
-
-envcorr <- get.enviro.cor(my_boral_occ)
-
-corrplot(envcorr$cor)
-corrplot(envcorr$sig.cor)
+abline(0,1)
 
 
-my_boral_abn$geweke.diag$prop.exceed
-my_boral_abn
+
+#Conservative try ####
+
+species_df[is.na(species_df)] <- 0
+
+spdat <- species_df %>% left_join(my_soil_df, by = "plot") %>% filter(!is.na(type))
+
+spdat <- na.omit(spdat)
+sp <- spdat %>% select(ruschia_burtoniae, c_spissum, a_fissum, a_delaetii, c_subfenestratum, dicrocaulon, mesemb_1, drosanthemum_diversifolium, crassula_muscosa, tylecodon_pygmaeus, oophytum, a_framesii) %>% as.matrix()
+
+covar <- spdat %>% select(acidity, Sand, drainage, Olsen, Na, C_N_ratio, Ca) %>% as.matrix()
+
+
+simple_mod <- boral(
+  sp,
+  X = covar,
+  family = "negative.binomial",
+  num.lv = 2,
+  save.model = T
+)
+
+plot.boral(simple_mod)
+
+mod_fit <- fitted.boral(simple_mod, est = "mean")
+pred <- as.data.frame(mod_fit$out)
+plot(pred$drosanthemum_diversifolium ~ spdat$drosanthemum_diversifolium)
+
+summary(pred)
+abline(0,1)
+
+mod_fit$ordinal.probs
+
+save(simple_mod, file =  "simple_mod.rda")
