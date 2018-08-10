@@ -204,7 +204,9 @@ test_dat <- my_soil_df %>%
 
 which(is.na(test_dat))
 
-pred <- predict.boral(grid_abn_allsp_8Aug, newX = test_dat, predict.type = "marginal")
+pred <- predict.boral(grid_abn_allsp_8Aug, newX = covar)
+
+grid_abn_allsp_8Aug$call
 
 hist(pred$linpred)
 ep <- exp(pred$linpred)
@@ -214,16 +216,93 @@ sum(species_df$ruschia_burtoniae, na.rm = T)
 
 predict(grid_abn_allsp_8Aug, test_dat, type = "response")
 
-#Ordination
 
-ord <- boral(sp,
-              family = "binomial",
-              num.lv = 2,
-              save.model = T)
+#fitted
 
-lvsplot(ord)
+fit_abn <- fitted.boral(grid_abn_allsp_8Aug)
+summary(fit_abn$out)
+
+hist(fit_abn$out)
+
+plot()
+
+pred <- as.data.frame(fit_abn$out)
+plot(pred$c_spissum ~ all_dat_abn$c_spissum)
+abline(0, 1)
+m1 <- lm(pred$c_spissum ~ all_dat_abn$c_spissum)
+summary(m1)
+
+pred <- as.data.frame(fit_mod1$out)
+plot(pred$c_spissum ~ all_dat$c_spissum)
+abline(0, 1)
 
 
+#redo with non correlated vars ####
+
+enviro_var <- my_soil_df %>% 
+  filter(type == "grid") %>%
+  select(-c( 
+            type, 
+            site, 
+            munsell, 
+            hue,
+            ph_h20,
+            Very_fine_sand,
+            Very_coarse_sand,
+            Coarse_sand,
+            Medium_sand,
+            Fine_sand,
+            dN,
+            dC,
+            Clay,
+            Silt,
+            acidity,
+            conductivity_ms,
+            Mg,
+            C_perc,
+            corr_dC,
+            K)) 
+
+all_dat_abn <- left_join(nb_sp_grid_abn, enviro_var, by = "plot") %>% select(-plot)
+
+all_dat_abn <- na.omit(all_dat_abn)
+
+
+sp <- all_dat_abn %>% select(1:15) %>% as.matrix()
+covar <- all_dat_abn %>% select(16:36) %>% as.matrix()
+
+grid_abn_allsp_no_colin_10Aug <- boral(
+  sp,
+  X = covar,
+  family = "negative.binomial",
+  num.lv = 2,
+  save.model = T
+)
+
+summary(grid_abn_allsp_no_colin_10Aug)
+
+
+plot.boral(grid_abn_allsp_no_colin_10Aug)
+
+lvsplot(grid_abn_allsp_no_colin_10Aug)
+coefsplot("ph_kcl", grid_abn_allsp_no_colin_10Aug)
+
+
+envcors <- get.enviro.cor(grid_abn_allsp_no_colin_10Aug)
+rescors <- get.residual.cor(grid_abn_allsp_no_colin_10Aug)
+corrplot(envcors$cor)
+corrplot(envcors$sig.cor)
+corrplot(rescors$correlation, order = "AOE", type = "lower")
+corrplot(rescors$sig.correlaton)
+
+mod_fit <- fitted.boral(grid_abn_allsp_no_colin_10Aug)
+pred <- as.data.frame(mod_fit$out)
+plot(pred$c_spissum ~ all_dat_abn$c_spissum)
+abline(0, 1)
+
+plot(pred$galenia_fruticosa ~ all_dat_abn$galenia_fruticosa)
+
+which(pred$oophytum == max(pred$oophytum))
 
 #Spider tutorial
 
