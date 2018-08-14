@@ -161,17 +161,130 @@ write.csv(train.results_out, "/Users/larawootton/Documents/Honours/Data/BRT_outp
 
 
 
+
+
 #Run BRTs ####
 
 #Ocurrence
 
+#Optimising process showed that TC = 2, LR = 0.0005
 
+brt_var <- c(11:28)
+tree.com <- 2
+learn <- 0.0005
+
+
+results <- list()
+psuedoR2 <- matrix(nrow = 10, ncol = 2, dimnames = list(NULL, c("species", "R2")))
+
+
+for (i in 1:10) {
+  
+  brt_results <- gbm.step(dat_occ,
+                          gbm.x = brt_var,
+                          gbm.y = i,
+                          plot.main = TRUE,
+                          family = "bernoulli",
+                          step.size = 50,
+                          tree.complexity = tree.com,
+                          learning.rate = learn,
+                          max.trees=10000,
+                          n.folds = 10,
+                          bag.fraction = 0.5
+  )
+  
+  species <- names(occ_df[i])
+  
+  results[[species]] <- brt_results
+  
+  psuedoR2[i,] <- c(species = species, R2 = 1-(brt_results$cv.statistics$deviance.mean/brt_results$self.statistics$mean.null))
+
+}
+
+
+results
+as.data.frame(psuedoR2)
+
+summary(results$Oophytum_sp)
+results$R_burtoniae
 #Abundance
 
 
 
 #JSDM ####
 
+occ_df <- na.omit(occ_df) #remove nas
+
+#which variables are correlated with each other?
+
+corr_mx <- cor(occ_df[c(12:45)])
+si_corr <- apply(abs(corr_mx) >= 0.7 & abs(corr_mx) <1 , 1, any)
+corr_vars <- occ_df %>% select(acidity,
+                               Mg,
+                               Na,
+                               K,
+                               Clay,
+                               Silt,
+                               Sand,
+                               conductivity_ms,
+                               ph_kcl, 
+                               C_perc, 
+                               corr_dC,
+                               C_N_ratio) %>% 
+  cor()
+
+corrplot::corrplot(corr_vars, type = "lower", method = "number")
+
+corr_vars2 <- occ_df %>% select(lon, 
+                                lat,
+                                percent_over1,
+                                percent_over2,
+                                Ca,
+                                Na,
+                                P,
+                                Olsen,
+                                Clay,
+                                ph_kcl, 
+                                N_perc,
+                                corr_dN,
+                                C_perc, 
+                                corr_dC,
+                                C_N_ratio,
+                                elevation,
+                                slope,
+                                aspect,
+                                drainage, 
+                                Q_cover) %>% 
+  cor()
+corrplot::corrplot(corr_vars2, type = "lower", method = "number")
+#Use ph as a proxy for acidity, Mg, K, corr dC (ph_et_al)
+#Use Clay as a proxy for silt and sand (texture)
+#Use Na as proxy for conductivity (salt)
+#Use C_N_ratio as proxy for perc_C (carbon)
+
+dat_occ <- cbind(occ_df[,1:10], occ_df %>% select(lon, 
+                                                  lat,
+                                                  percent_over1,
+                                                  percent_over2,
+                                                  Ca,
+                                                  Na,
+                                                  P,
+                                                  Olsen,
+                                                  Clay,
+                                                  ph_kcl, 
+                                                  N_perc,
+                                                  corr_dN,
+                                                  C_N_ratio,
+                                                  elevation,
+                                                  slope,
+                                                  aspect,
+                                                  drainage, 
+                                                  Q_cover))
+glimpse(dat_occ)
+colnames(dat_occ)[colnames(dat_occ) == "ph_kcl"] <- "ph_et_al"
+colnames(dat_occ)[colnames(dat_occ) == "Clay"] <- "texture"
+colnames(dat_occ)[colnames(dat_occ) == "Na"] <- "salt"
+colnames(dat_occ)[colnames(dat_occ) == "C_N_ratio"] <- "carbon"
 
 #Predicting occurrence with model ####
 
