@@ -8,7 +8,7 @@
 rm(list = ls())
 
 if(!require(pacman)){install.packages("pacman", dependencies=TRUE); library(pacman)}
-p_load(dplyr, dismo, gbm, foreach, doParallel, TeachingDemos)
+p_load(dplyr, dismo, gbm, foreach, doParallel, TeachingDemos, boral, corrplot, pROC, ggplot2)
 
 source("/Users/larawootton/Documents/Honours/Project_analysis/to_be_sourced.R")
 
@@ -65,6 +65,83 @@ occ_df <- left_join(sp_occ, nb_soil, by = "plot") %>% #Bind soil vars to species
   select(-type, -site) #Don't need these 
 
 rm(sp_occ, nb_sp, nb_soil)
+
+occ_df <- na.omit(occ_df) #remove nas
+
+#which variables are correlated with each other?
+
+corr_mx <- cor(occ_df[c(12:45)])
+(big_corr <- apply(abs(corr_mx) >= 0.7 & abs(corr_mx) <1 , 1, any)) #Which correlations are greater than 0.7?
+corr_vars <- occ_df %>% select(acidity,
+                               Mg,
+                               Na,
+                               K,
+                               Clay,
+                               Silt,
+                               Sand,
+                               conductivity_ms,
+                               ph_kcl, 
+                               C_perc, 
+                               corr_dC,
+                               C_N_ratio) %>% 
+  cor()
+
+corrplot::corrplot(corr_vars, type = "lower", method = "number")
+
+corr_vars2 <- occ_df %>% select(lon, 
+                                lat,
+                                percent_over1,
+                                percent_over2,
+                                Ca,
+                                Na,
+                                P,
+                                Olsen,
+                                Clay,
+                                ph_kcl, 
+                                N_perc,
+                                corr_dN,
+                                C_perc, 
+                                corr_dC,
+                                C_N_ratio,
+                                elevation,
+                                slope,
+                                aspect,
+                                drainage, 
+                                Q_cover) %>% 
+  cor()
+corrplot::corrplot(corr_vars2, type = "lower", method = "number")
+
+#Use ph as a proxy for acidity, Mg, K, corr dC (ph_et_al)
+#Use Clay as a proxy for silt and sand (texture)
+#Use Na as proxy for conductivity (salt)
+#Use C_N_ratio as proxy for perc_C (carbon)
+
+dat_occ <- cbind(occ_df[,1:10], occ_df %>% select(lon, 
+                                                  lat,
+                                                  percent_over1,
+                                                  percent_over2,
+                                                  Ca,
+                                                  Na,
+                                                  P,
+                                                  Olsen,
+                                                  Clay,
+                                                  ph_kcl, 
+                                                  N_perc,
+                                                  corr_dN,
+                                                  C_N_ratio,
+                                                  elevation,
+                                                  slope,
+                                                  aspect,
+                                                  drainage, 
+                                                  Q_cover))
+glimpse(dat_occ)
+colnames(dat_occ)[colnames(dat_occ) == "ph_kcl"] <- "ph_et_al"
+colnames(dat_occ)[colnames(dat_occ) == "Clay"] <- "texture"
+colnames(dat_occ)[colnames(dat_occ) == "Na"] <- "salt"
+colnames(dat_occ)[colnames(dat_occ) == "C_N_ratio"] <- "carbon"
+
+rm(corr_vars, corr_vars2, big_corr)
+
 
 #Optimise BRTs ####
 
@@ -207,87 +284,177 @@ as.data.frame(psuedoR2)
 
 summary(results$Oophytum_sp)
 results$R_burtoniae
+
+#Choose variables that have 5% relative influence for at least one sp.
+
+ fin_occ_df <- dat_occ %>% 
+  select(1:10, 
+         ph_et_al,
+         salt,
+         carbon,
+         Ca,
+         Q_cover,
+         elevation,
+         percent_over1,
+         percent_over2,
+         lat,
+         lon,
+         aspect,
+         texture,
+         corr_dN,
+         drainage)
+
 #Abundance
 
 
 
 #JSDM ####
 
-occ_df <- na.omit(occ_df) #remove nas
+ #Full model
+sp <- as.matrix(fin_occ_df[,1:10])
+covar <- as.matrix(fin_occ_df[,11:24]) 
+ 
+occ_model_14Aug <- boral(sp,
+                         X = covar,
+                         family = "binomial",
+                         num.lv = 3,
+                         save.model = T)
 
-#which variables are correlated with each other?
+save(occ_model_14Aug, file = "occ_model_14Aug.rda")
 
-corr_mx <- cor(occ_df[c(12:45)])
-si_corr <- apply(abs(corr_mx) >= 0.7 & abs(corr_mx) <1 , 1, any)
-corr_vars <- occ_df %>% select(acidity,
-                               Mg,
-                               Na,
-                               K,
-                               Clay,
-                               Silt,
-                               Sand,
-                               conductivity_ms,
-                               ph_kcl, 
-                               C_perc, 
-                               corr_dC,
-                               C_N_ratio) %>% 
-  cor()
+plot.boral(occ_model_14Aug)
+summary(occ_model_14Aug)
+lvsplot(occ_model_14Aug)
+coefsplot("ph_et_al", occ_model_14Aug)
 
-corrplot::corrplot(corr_vars, type = "lower", method = "number")
+var <- calc.varpart(occ_model_14Aug)
+part <- data.frame(enviro = var$varpart.X, bio = var$varpart.lv)
 
-corr_vars2 <- occ_df %>% select(lon, 
-                                lat,
-                                percent_over1,
-                                percent_over2,
-                                Ca,
-                                Na,
-                                P,
-                                Olsen,
-                                Clay,
-                                ph_kcl, 
-                                N_perc,
-                                corr_dN,
-                                C_perc, 
-                                corr_dC,
-                                C_N_ratio,
-                                elevation,
-                                slope,
-                                aspect,
-                                drainage, 
-                                Q_cover) %>% 
-  cor()
-corrplot::corrplot(corr_vars2, type = "lower", method = "number")
-#Use ph as a proxy for acidity, Mg, K, corr dC (ph_et_al)
-#Use Clay as a proxy for silt and sand (texture)
-#Use Na as proxy for conductivity (salt)
-#Use C_N_ratio as proxy for perc_C (carbon)
+barplot(as.matrix(t(part)), las = 2, col = c("brown4", "light green"))
 
-dat_occ <- cbind(occ_df[,1:10], occ_df %>% select(lon, 
-                                                  lat,
-                                                  percent_over1,
-                                                  percent_over2,
-                                                  Ca,
-                                                  Na,
-                                                  P,
-                                                  Olsen,
-                                                  Clay,
-                                                  ph_kcl, 
-                                                  N_perc,
-                                                  corr_dN,
-                                                  C_N_ratio,
-                                                  elevation,
-                                                  slope,
-                                                  aspect,
-                                                  drainage, 
-                                                  Q_cover))
-glimpse(dat_occ)
-colnames(dat_occ)[colnames(dat_occ) == "ph_kcl"] <- "ph_et_al"
-colnames(dat_occ)[colnames(dat_occ) == "Clay"] <- "texture"
-colnames(dat_occ)[colnames(dat_occ) == "Na"] <- "salt"
-colnames(dat_occ)[colnames(dat_occ) == "C_N_ratio"] <- "carbon"
+
+mod_fit <- fitted.boral(occ_model_14Aug, est = "mean")
+pred <- as.data.frame(mod_fit$out)
+plot(pred$D_diversifolium ~ fin_occ_df$D_diversifolium)
+roc1 <- roc(fin_occ_df$D_diversifolium, pred$D_diversifolium)
+plot(roc1)
+
+#scaled vars
+
+sp <- as.matrix(fin_occ_df[,1:10])
+covar <- as.matrix(scale(fin_occ_df[,11:24])) 
+
+occ_model_scaled_14Aug <- boral(sp,
+                         X = covar,
+                         family = "binomial",
+                         num.lv = 3,
+                         save.model = T)
+
+save(occ_model_scaled_14Aug, file = "occ_model_scaled_14Aug.rda")
+
+
+plot.boral(occ_model_scaled_14Aug)
+summary(occ_model_scaled_14Aug)
+lvsplot(occ_model_scaled_14Aug)
+
+
+par(mfrow = c(2,3))
+coefsplot("percent_over1", occ_model_scaled_14Aug)
+coefsplot("ph_et_al", occ_model_scaled_14Aug)
+coefsplot("percent_over1", occ_model_scaled_14Aug)
+coefsplot("carbon", occ_model_scaled_14Aug)
+coefsplot("texture", occ_model_scaled_14Aug)
+coefsplot("salt", occ_model_scaled_14Aug)
+
+
+
+
+mod_fit <- fitted.boral(occ_model_scaled_14Aug, est = "mean")
+pred <- as.data.frame(mod_fit$out)
+summary(pred)
+plot(pred$C_spissum ~ jitter(fin_occ_df$C_spissum))
+roc1 <- roc(fin_occ_df$C_spissum, pred$C_spissum)
+plot(roc1)
+
+
+var <- calc.varpart(occ_model_scaled_14Aug)
+part <- data.frame(enviro = var$varpart.X, bio = var$varpart.lv)
+
+barplot(as.matrix(t(part)), las = 2, col = c("brown4", "light green"))
+
+envcors <- get.enviro.cor(occ_model_scaled_14Aug)
+rescors <- get.residual.cor(occ_model_scaled_14Aug)
+corrplot(envcors$cor)
+corrplot(envcors$sig.cor, order = "hclust")
+corrplot(rescors$correlation, order = "AOE", type = "lower")
+corrplot(rescors$sig.correlaton)
+
 
 #Predicting occurrence with model ####
 
+rplots <- sample(150, 75)
+train_occ <- fin_occ_df[rplots,]
+
+sp <- as.matrix(train_occ[,1:10])
+covar <- as.matrix(scale(train_occ[,11:24])) 
+
+train_occ_scaled_14Aug <- boral(sp,
+                                X = covar,
+                                family = "binomial",
+                                num.lv = 3,
+                                save.model = T)
+
+save(train_occ_scaled_14Aug, file = "train_occ_scaled_14Aug.rda")
+plot.boral(train_occ_scaled_14Aug)
+
+mod_fit <- fitted.boral(train_occ_scaled_14Aug, est = "mean")
+pred <- as.data.frame(mod_fit$out)
+summary(pred)
+plot(pred$C_spissum ~ jitter(train_occ$C_spissum))
+roc1 <- roc(train_occ$C_spissum, pred$C_spissum)
+plot(roc1)
+
+test_occ <- fin_occ_df[-rplots,]
+test_covar <- as.matrix(scale(test_occ[,11:24])) 
+
+newpred <- predict.boral(train_occ_scaled_14Aug, 
+                         newX = test_covar, 
+                         predict.type = "marginal",
+                         est = "mean")
+
+newpred$linpred
+newpred$lower
+
+#convert to probability
+e <- exp(newpred$linpred)
+pr <- apply(e, 2, function(x) x/(1+x)) 
+
+plot(pr[,1] ~ jitter(test_occ$R_burtoniae))
+
+(rocp <- roc(test_occ$R_burtoniae, pr[,1]))
+plot.roc(rocp)
+
+
+pred <- ROCR::prediction(newpred$linpred[,10], test_occ$Oophytum_sp)
+rocs <- ROCR::performance(pred, "tpr", "fpr")
+auc <- ROCR::performance(pred, "auc")
+plot(rocs)
+
+preds_list <- list(pr[,1], pr[,2], pr[,3],pr[,4],pr[,5], pr[,6],pr[,7],pr[,8],pr[,9],pr[,10])
+actuals_list <- list(test_occ[,1], test_occ[,2],test_occ[,3],test_occ[,4],test_occ[,5],test_occ[,6],test_occ[,7],test_occ[,8],test_occ[,9],test_occ[,10])
+
+pred <- ROCR::prediction(preds_list, actuals_list)
+rocs <- ROCR::performance(pred, "tpr", "fpr")
+aucs <- ROCR::performance(pred, "auc")
+plot(rocs, col = as.list(1:10))
+abline(0,1)
+
+roc_dat <- data.frame(rocs@x.values, rocs@y.values)
+ggplot(data.frame(newpred$linpred[,10],test_occ$Oophytum_sp), aes(y = newpred$linpred[,10], x = test_occ$Oophytum_sp)) + geom_line()
+
+x <- as.vector(rocs@x.values)
+y <- as.vector(rocs@y.values)
+plot(x,y)
 #Predicting occurrence onto new data ####
 
 #Predicting abundance
