@@ -6,6 +6,7 @@
 
 #---Set up--------------------------------
 rm(list = ls())
+setwd("/Users/larawootton/Documents/Honours/Data")
 
 if(!require(pacman)){install.packages("pacman", dependencies=TRUE); library(pacman)}
 p_load(dplyr, dismo, gbm, foreach, doParallel, TeachingDemos, boral, corrplot, pROC, ggplot2)
@@ -64,9 +65,16 @@ occ_df <- left_join(sp_occ, nb_soil, by = "plot") %>% #Bind soil vars to species
   filter(!is.na(type)) %>% #Remove rows that we don't have data for
   select(-type, -site) #Don't need these 
 
-rm(sp_occ, nb_sp, nb_soil)
+occ_site_df <- left_join(sp_occ, nb_soil, by = "plot") %>% #Bind soil vars to species
+  filter(!is.na(type)) %>% #Remove rows that we don't have data for
+  select(-type) #keep sites for later
 
 occ_df <- na.omit(occ_df) #remove nas
+occ_site_df <- na.omit(occ_site_df)
+sites <- occ_site_df$site
+
+rm(sp_occ, nb_sp, nb_soil, occ_site_df)
+
 
 #which variables are correlated with each other?
 
@@ -392,7 +400,13 @@ corrplot(rescors$sig.correlaton)
 
 #Predicting occurrence with model ####
 
+
+#Random 50% of plots
 rplots <- sample(150, 75)
+rplots <- c(76, 37, 32,28,116,23,  48  ,16, 146,  45,  18, 132,  88,   5,  43, 126,  59, 118,  38,  31,  93, 123, 136, 100,   3,
+  57,  86,  80,  13, 115, 112, 1, 33, 150,  68,  72,  96,  41, 95,  15,  63,   7,  29,  17,  20,  40, 109, 142,  51,  67,
+  19,  79,  71,  56, 149, 139,  65,  39,   6, 114, 104, 141, 145,  92,  49  ,55 , 46, 130,  66, 144,  60,  61, 137,  47,  87)
+
 train_occ <- fin_occ_df[rplots,]
 
 sp <- as.matrix(train_occ[,1:10])
@@ -405,6 +419,7 @@ train_occ_scaled_14Aug <- boral(sp,
                                 save.model = T)
 
 save(train_occ_scaled_14Aug, file = "train_occ_scaled_14Aug.rda")
+load("train_occ_scaled_15Aug.rda")
 plot.boral(train_occ_scaled_14Aug)
 
 mod_fit <- fitted.boral(train_occ_scaled_14Aug, est = "mean")
@@ -425,6 +440,14 @@ newpred <- predict.boral(train_occ_scaled_14Aug,
 newpred$linpred
 newpred$lower
 
+pred <- newpred$linpred
+pred_all <- ROCR::prediction(pred, test_occ[,1:10])
+rocs <- ROCR::performance(pred_all, "tpr", "fpr")
+plot(rocs, col = as.list(colours))
+abline(0,1)
+
+aucs <- ROCR::performance(pred_all, "auc")
+
 #convert to probability
 e <- exp(newpred$linpred)
 pr <- apply(e, 2, function(x) x/(1+x)) 
@@ -443,22 +466,133 @@ plot(rocs)
 preds_list <- list(pr[,1], pr[,2], pr[,3],pr[,4],pr[,5], pr[,6],pr[,7],pr[,8],pr[,9],pr[,10])
 actuals_list <- list(test_occ[,1], test_occ[,2],test_occ[,3],test_occ[,4],test_occ[,5],test_occ[,6],test_occ[,7],test_occ[,8],test_occ[,9],test_occ[,10])
 
-pred <- ROCR::prediction(preds_list, actuals_list)
+pred <- ROCR::prediction(preds_list, labels = actuals_list)
 rocs <- ROCR::performance(pred, "tpr", "fpr")
 aucs <- ROCR::performance(pred, "auc")
 plot(rocs, col = as.list(1:10))
 abline(0,1)
 
-roc_dat <- data.frame(rocs@x.values, rocs@y.values)
-ggplot(data.frame(newpred$linpred[,10],test_occ$Oophytum_sp), aes(y = newpred$linpred[,10], x = test_occ$Oophytum_sp)) + geom_line()
 
-x <- as.vector(rocs@x.values)
-y <- as.vector(rocs@y.values)
-plot(x,y)
+#Use two plots to predict onto one
+
+#2 and 3 to 1
+site_occ <- cbind(site = sites, fin_occ_df)
+plots_23 <- site_occ %>% 
+  filter(!site == "site1")
+plots_1 <- site_occ %>% 
+  filter(site == "site1")
+
+
+sp <- as.matrix(plots_23[,2:11])
+covar <- as.matrix(scale(plots_23[,12:25])) 
+
+plots23_15Aug <- boral(sp,
+                                X = covar,
+                                family = "binomial",
+                                num.lv = 3,
+                                save.model = T)
+save(plots23_15Aug, file = "plots23_15Aug.rda")
+
+plot.boral(plots23_15Aug)
+
+newpred <- predict.boral(plots23_15Aug, 
+                         newX = plots_1[,12:25], 
+                         predict.type = "marginal",
+                         est = "mean")
+summary(newpred$linpred)
+which()
+
+e <- exp(newpred$linpred)
+pr <- apply(e, 2, function(x) x/(1+x)) 
+
+plot(newpred$linpred[,3] ~ jitter(plots_1$D_diversifolium))
+
+pred <- ROCR::prediction(newpred$linpred[,4], plots_1[,5])
+rocs <- ROCR::performance(pred, "tpr", "fpr")
+(auc <- ROCR::performance(pred, "auc"))
+plot(rocs)
+
+preds_list <- list(newpred$linpred[,1], newpred$linpred[,2], newpred$linpred[,3],newpred$linpred[,4],newpred$linpred[,5], newpred$linpred[,6],newpred$linpred[,7],newpred$linpred[,8],newpred$linpred[,9],newpred$linpred[,10])
+
+actuals_list <- list(plots_1[,2],plots_1[,3],plots_1[,4],plots_1[,5],plots_1[,6],plots_1[,7],plots_1[,8],plots_1[,9],plots_1[,10],
+                     plots_1[,11])
+
+pred <- ROCR::prediction(preds_list, actuals_list)
+rocs <- ROCR::performance(pred, "tpr", "fpr")
+aucs <- ROCR::performance(pred, "auc")
+plot(rocs, col = as.list(1:10))
+
+#1 and 2 to 3
+
+plots_12 <- site_occ %>% 
+  filter(!site == "site3")
+plots_3 <- site_occ %>% 
+  filter(site == "site3")
+
+sp <- as.matrix(plots_12[,2:11])
+covar <- as.matrix(scale(plots_12[,12:25])) 
+
+plots12_15Aug <- boral(sp,
+                       X = covar,
+                       family = "binomial",
+                       num.lv = 3,
+                       save.model = T)
+save(plots12_15Aug, file = "plots12_15Aug.rda")
+
+plot.boral(plots12_15Aug)
+
+newpred2 <- predict.boral(plots12_15Aug, 
+                         newX = plots_3[,12:25], 
+                         predict.type = "marginal",
+                         est = "mean")
+
+pred <- newpred2$linpred
+
+pred_all <- ROCR::prediction(pred[,c(1:5, 7:10)], plots_3[,c(2:6,8:11)])
+rocs <- ROCR::performance(pred_all, "tpr", "fpr")
+plot(rocs, col = as.list(colours))
+abline(0,1)
+
+aucs <- ROCR::performance(pred_all, "auc")
+
+#sites 1 and 3 on 2
+plots_13 <- site_occ %>% 
+  filter(!site == "site2")
+plots_2 <- site_occ %>% 
+  filter(site == "site2")
+
+sp <- as.matrix(plots_13[,2:11])
+covar <- as.matrix(scale(plots_13[,12:25])) 
+
+plots13_15Aug <- boral(sp,
+                       X = covar,
+                       family = "binomial",
+                       num.lv = 3,
+                       save.model = T)
+
+save(plots13_15Aug, file = "plots13_15Aug.rda")
+
+plot.boral(plots13_15Aug)
+
+newpred3 <- predict.boral(plots13_15Aug, 
+                          newX = plots_2[,12:25], 
+                          predict.type = "marginal",
+                          est = "mean")
+
+pred <- newpred3$linpred
+
+pred_all <- ROCR::prediction(pred[,c(1, 3:7, 9, 10)], plots_2[,c(2,4:8, 10,11)])
+rocs <- ROCR::performance(pred_all, "tpr", "fpr")
+plot(rocs, col = as.list(colours))
+abline(0,1)
+
+aucs <- ROCR::performance(pred_all, "auc")
+
+
 #Predicting occurrence onto new data ####
 
 #Predicting abundance
-
+plots_2[2:11]
 
 
 
