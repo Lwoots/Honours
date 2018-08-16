@@ -343,11 +343,16 @@ barplot(as.matrix(t(part)), las = 2, col = c("brown4", "light green"))
 
 mod_fit <- fitted.boral(occ_model_14Aug, est = "mean")
 pred <- as.data.frame(mod_fit$out)
-plot(pred$D_diversifolium ~ fin_occ_df$D_diversifolium)
-roc1 <- roc(fin_occ_df$D_diversifolium, pred$D_diversifolium)
-plot(roc1)
+pred_all <- ROCR::prediction(pred, fin_occ_df[,1:10])
+rocs <- ROCR::performance(pred_all, "tpr", "fpr")
 
-#scaled vars
+colours <- c("burlywood", "firebrick2", "chocolate1","darkolivegreen1", "darkseagreen1", "green4", "orange4", "yellow2", "darkblue","turquoise4"  )
+plot(rocs, col = as.list(colours))
+abline(0,1)
+
+aucs <- ROCR::performance(pred_all, "auc")
+
+#scaled vars to improve model fit
 
 sp <- as.matrix(fin_occ_df[,1:10])
 covar <- as.matrix(scale(fin_occ_df[,11:24])) 
@@ -372,23 +377,30 @@ coefsplot("ph_et_al", occ_model_scaled_14Aug)
 coefsplot("percent_over1", occ_model_scaled_14Aug)
 coefsplot("carbon", occ_model_scaled_14Aug)
 coefsplot("texture", occ_model_scaled_14Aug)
-coefsplot("salt", occ_model_scaled_14Aug)
-
-
-
-
-mod_fit <- fitted.boral(occ_model_scaled_14Aug, est = "mean")
-pred <- as.data.frame(mod_fit$out)
-summary(pred)
-plot(pred$C_spissum ~ jitter(fin_occ_df$C_spissum))
-roc1 <- roc(fin_occ_df$C_spissum, pred$C_spissum)
-plot(roc1)
+coefsplot("Ca", occ_model_scaled_14Aug)
 
 
 var <- calc.varpart(occ_model_scaled_14Aug)
 part <- data.frame(enviro = var$varpart.X, bio = var$varpart.lv)
-
 barplot(as.matrix(t(part)), las = 2, col = c("brown4", "light green"))
+
+bardat <- data.frame(Species =rep(rownames(part),2), variance = c(as.vector(part[,1]), as.vector(part[,2])), type = c(rep("enviro",10), rep("lv",10)))
+glimpse(bardat)
+
+ggplot(bardat, aes(x=Species, y=variance, fill = type)) +
+  geom_bar(stat="identity", position=position_dodge()) + 
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 45, 
+                                   colour = "black", 
+                                   size = 10,
+                                   vjust = 0.98, 
+                                   hjust = 1),
+        axis.title.x = element_blank(),
+        panel.grid = element_blank()) +
+  labs(y = "Proportion of variance")
+  
+
+?element_text
 
 envcors <- get.enviro.cor(occ_model_scaled_14Aug)
 rescors <- get.residual.cor(occ_model_scaled_14Aug)
@@ -398,14 +410,91 @@ corrplot(rescors$correlation, order = "AOE", type = "lower")
 corrplot(rescors$sig.correlaton)
 
 
+qgraph::qgraph(envcors$sig.cor, shape="circle", posCol="darkgreen", negCol="darkred", layout="groups", vsize=10)
+qgraph::qgraph(rescors$sig.correlaton, shape="circle", posCol="darkgreen", negCol="darkred", layout="groups", vsize=10)
+
+#Caterpillar plots
+
+
+mod <- occ_model_scaled_14Aug
+par(mfrow = c(1,2))
+
+for (i in 1:10) {
+  col.seq <-
+    rep("black", length(mod$hpdintervals$X.coefs[i, 1:14, "lower"]))
+  col.seq[mod$hpdintervals$X.coefs[i, 1:14, "lower"] < 0 &
+            mod$hpdintervals$X.coefs[i, 1:14, "upper"] > 0] <- "grey"
+  
+  plot(
+    x = c(mod$X.coefs.mean[i, 1:14]),
+    y = 1:14,
+    yaxt = "n",
+    ylab = "",
+    xlab = rownames(mod$X.coefs.mean)[i],
+    col = col.seq,
+    xlim = c(
+      min(mod$hpdintervals$X.coefs[, 1:14, "lower"]),
+      max(mod$hpdintervals$X.coefs[, 1:14, "upper"])
+    ),
+    pch = "x"
+  )
+  
+  axis(
+    2,
+    labels = colnames(mod$X.coefs.mean),
+    at = 1:14,
+    las = 2,
+    cex.axis = 0.75
+  )
+  
+  segments(
+    x0 = mod$hpdintervals$X.coefs[i, 1:14, "lower"],
+    y0 = 1:14,
+    x1 = occ_model_scaled_14Aug$hpdintervals$X.coefs[i, 1:14, "upper"],
+    y1 = 1:14,
+    col = col.seq
+  )
+  abline(v = 0, lty = 3)
+  
+}
+
+col.seq <- rep("black", length(mod$hpdintervals$X.coefs[1,1:14,"lower"]))
+col.seq[mod$hpdintervals$X.coefs[1,1:14,"lower"] < 0 & mod$hpdintervals$X.coefs[1,1:14,"upper"] > 0] <- "grey"
+
+plot(
+  x = c(mod$X.coefs.mean[1, 1:14]),
+  y = 1:14,
+  yaxt = "n",
+  ylab = "",
+  xlab = rownames(mod$X.coefs.mean)[1],
+  col = col.seq,
+  xlim = c(
+    min(mod$hpdintervals$X.coefs[, 1:14, "lower"]),
+    max(mod$hpdintervals$X.coefs[, 1:14, "upper"])
+  ),
+  pch = "x"
+)
+
+axis(2, labels = colnames(mod$X.coefs.mean), at = 1:14, las = 2)
+
+segments(x0 = mod$hpdintervals$X.coefs[1,1:14,"lower"], y0 = 1:14, x1 = occ_model_scaled_14Aug$hpdintervals$X.coefs[1,1:14,"upper"], y1 = 1:14, col = col.seq)
+abline(v=0, lty=3)
+
+
+
 #Predicting occurrence with model ####
 
+mod_fit <- fitted.boral(occ_model_scaled_14Aug, est = "mean")
+pred <- as.data.frame(mod_fit$out)
+summary(pred)
+plot(pred$C_spissum ~ jitter(fin_occ_df$C_spissum))
+roc1 <- roc(fin_occ_df$C_spissum, pred$C_spissum)
+plot(roc1)
 
+#Predicting occurrence onto new data ####
 #Random 50% of plots
 rplots <- sample(150, 75)
-rplots <- c(76, 37, 32,28,116,23,  48  ,16, 146,  45,  18, 132,  88,   5,  43, 126,  59, 118,  38,  31,  93, 123, 136, 100,   3,
-  57,  86,  80,  13, 115, 112, 1, 33, 150,  68,  72,  96,  41, 95,  15,  63,   7,  29,  17,  20,  40, 109, 142,  51,  67,
-  19,  79,  71,  56, 149, 139,  65,  39,   6, 114, 104, 141, 145,  92,  49  ,55 , 46, 130,  66, 144,  60,  61, 137,  47,  87)
+rplots <- c(76, 37, 32,28,116,23, 48,16, 146, 45,18, 132,88, 5, 43, 126, 59, 118,  38,  31,  93, 123, 136, 100,3,57,  86,80,  13, 115, 112, 1, 33, 150,  68, 72,96, 41, 95,  15,  63, 7, 29,  17,20,40, 109, 142,51, 67,19,79, 71,56, 149, 139, 65, 39, 6, 114, 104, 141, 145, 92, 49,55, 46, 130,66, 144, 60,61, 137,  47,  87)
 
 train_occ <- fin_occ_df[rplots,]
 
@@ -448,30 +537,6 @@ abline(0,1)
 
 aucs <- ROCR::performance(pred_all, "auc")
 
-#convert to probability
-e <- exp(newpred$linpred)
-pr <- apply(e, 2, function(x) x/(1+x)) 
-
-plot(pr[,1] ~ jitter(test_occ$R_burtoniae))
-
-(rocp <- roc(test_occ$R_burtoniae, pr[,1]))
-plot.roc(rocp)
-
-
-pred <- ROCR::prediction(newpred$linpred[,10], test_occ$Oophytum_sp)
-rocs <- ROCR::performance(pred, "tpr", "fpr")
-auc <- ROCR::performance(pred, "auc")
-plot(rocs)
-
-preds_list <- list(pr[,1], pr[,2], pr[,3],pr[,4],pr[,5], pr[,6],pr[,7],pr[,8],pr[,9],pr[,10])
-actuals_list <- list(test_occ[,1], test_occ[,2],test_occ[,3],test_occ[,4],test_occ[,5],test_occ[,6],test_occ[,7],test_occ[,8],test_occ[,9],test_occ[,10])
-
-pred <- ROCR::prediction(preds_list, labels = actuals_list)
-rocs <- ROCR::performance(pred, "tpr", "fpr")
-aucs <- ROCR::performance(pred, "auc")
-plot(rocs, col = as.list(1:10))
-abline(0,1)
-
 
 #Use two plots to predict onto one
 
@@ -500,12 +565,6 @@ newpred <- predict.boral(plots23_15Aug,
                          predict.type = "marginal",
                          est = "mean")
 summary(newpred$linpred)
-which()
-
-e <- exp(newpred$linpred)
-pr <- apply(e, 2, function(x) x/(1+x)) 
-
-plot(newpred$linpred[,3] ~ jitter(plots_1$D_diversifolium))
 
 pred <- ROCR::prediction(newpred$linpred[,4], plots_1[,5])
 rocs <- ROCR::performance(pred, "tpr", "fpr")
@@ -588,8 +647,6 @@ abline(0,1)
 
 aucs <- ROCR::performance(pred_all, "auc")
 
-
-#Predicting occurrence onto new data ####
 
 #Predicting abundance
 plots_2[2:11]
