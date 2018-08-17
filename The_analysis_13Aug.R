@@ -416,7 +416,7 @@ qgraph::qgraph(rescors$sig.correlaton, shape="circle", posCol="darkgreen", negCo
 #Caterpillar plots
 
 
-mod <- occ_model_scaled_14Aug
+mod <- train_occ_scaled_14Aug
 par(mfrow = c(1,2))
 
 for (i in 1:10) {
@@ -457,29 +457,6 @@ for (i in 1:10) {
   abline(v = 0, lty = 3)
   
 }
-
-col.seq <- rep("black", length(mod$hpdintervals$X.coefs[1,1:14,"lower"]))
-col.seq[mod$hpdintervals$X.coefs[1,1:14,"lower"] < 0 & mod$hpdintervals$X.coefs[1,1:14,"upper"] > 0] <- "grey"
-
-plot(
-  x = c(mod$X.coefs.mean[1, 1:14]),
-  y = 1:14,
-  yaxt = "n",
-  ylab = "",
-  xlab = rownames(mod$X.coefs.mean)[1],
-  col = col.seq,
-  xlim = c(
-    min(mod$hpdintervals$X.coefs[, 1:14, "lower"]),
-    max(mod$hpdintervals$X.coefs[, 1:14, "upper"])
-  ),
-  pch = "x"
-)
-
-axis(2, labels = colnames(mod$X.coefs.mean), at = 1:14, las = 2)
-
-segments(x0 = mod$hpdintervals$X.coefs[1,1:14,"lower"], y0 = 1:14, x1 = occ_model_scaled_14Aug$hpdintervals$X.coefs[1,1:14,"upper"], y1 = 1:14, col = col.seq)
-abline(v=0, lty=3)
-
 
 
 #Predicting occurrence with model ####
