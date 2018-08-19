@@ -1,3 +1,4 @@
+#Hi
 #Final analysis script
 #Finding nb variables with BRTs
 #Modeling with JSDMs
@@ -9,7 +10,7 @@ rm(list = ls())
 setwd("/Users/larawootton/Documents/Honours/Data")
 
 if(!require(pacman)){install.packages("pacman", dependencies=TRUE); library(pacman)}
-p_load(dplyr, dismo, gbm, foreach, doParallel, TeachingDemos, boral, corrplot, pROC, ggplot2)
+p_load(dplyr, dismo, gbm, foreach, doParallel, TeachingDemos, boral, corrplot, pROC, ggplot2. ROCR)
 
 source("/Users/larawootton/Documents/Honours/Project_analysis/to_be_sourced.R")
 
@@ -47,9 +48,9 @@ sp_occ <- nb_sp[2:11] %>%
   as.data.frame() %>% 
   mutate(plot = nb_sp$plot)#Create species occurrence df
 
-#Remove unimportant soil variables
+#Remove unimportant soil variables and lon lat, as they aren't technically environmental
 
-nb_soil <- my_soil_df %>% select(-c(munsell, hue, ph_h20, dN, dC))
+nb_soil <- my_soil_df %>% select(-c(munsell, hue, ph_h20, dN, dC, lon, lat))
 
 #Create abundance df
 
@@ -70,15 +71,17 @@ occ_site_df <- left_join(sp_occ, nb_soil, by = "plot") %>% #Bind soil vars to sp
   select(-type) #keep sites for later
 
 occ_df <- na.omit(occ_df) #remove nas
+glimpse(occ_df)
+
 occ_site_df <- na.omit(occ_site_df)
-sites <- occ_site_df$site
+sites <- occ_site_df$site #list of sites to filter with later
 
 rm(sp_occ, nb_sp, nb_soil, occ_site_df)
 
 
 #which variables are correlated with each other?
 
-corr_mx <- cor(occ_df[c(12:45)])
+corr_mx <- cor(occ_df[c(12:length(occ_df))])
 (big_corr <- apply(abs(corr_mx) >= 0.7 & abs(corr_mx) <1 , 1, any)) #Which correlations are greater than 0.7?
 corr_vars <- occ_df %>% select(acidity,
                                Mg,
@@ -96,8 +99,7 @@ corr_vars <- occ_df %>% select(acidity,
 
 corrplot::corrplot(corr_vars, type = "lower", method = "number")
 
-corr_vars2 <- occ_df %>% select(lon, 
-                                lat,
+corr_vars2 <- occ_df %>% select(
                                 percent_over1,
                                 percent_over2,
                                 Ca,
@@ -124,8 +126,7 @@ corrplot::corrplot(corr_vars2, type = "lower", method = "number")
 #Use Na as proxy for conductivity (salt)
 #Use C_N_ratio as proxy for perc_C (carbon)
 
-dat_occ <- cbind(occ_df[,1:10], occ_df %>% select(lon, 
-                                                  lat,
+dat_occ <- cbind(occ_df[,1:10], occ_df %>% select(
                                                   percent_over1,
                                                   percent_over2,
                                                   Ca,
@@ -148,7 +149,7 @@ colnames(dat_occ)[colnames(dat_occ) == "Clay"] <- "texture"
 colnames(dat_occ)[colnames(dat_occ) == "Na"] <- "salt"
 colnames(dat_occ)[colnames(dat_occ) == "C_N_ratio"] <- "carbon"
 
-rm(corr_vars, corr_vars2, big_corr)
+rm(corr_vars, corr_vars2, big_corr, corr_mx)
 
 
 #Optimise BRTs ####
@@ -254,7 +255,7 @@ write.csv(train.results_out, "/Users/larawootton/Documents/Honours/Data/BRT_outp
 
 #Optimising process showed that TC = 2, LR = 0.0005
 
-brt_var <- c(11:28)
+brt_var <- c(11:length(dat_occ))
 tree.com <- 2
 learn <- 0.0005
 
@@ -290,7 +291,7 @@ for (i in 1:10) {
 results
 as.data.frame(psuedoR2)
 
-summary(results$Oophytum_sp)
+summary(results$Dicrocaulon_sp)
 results$R_burtoniae
 
 #Choose variables that have 5% relative influence for at least one sp.
@@ -305,8 +306,8 @@ results$R_burtoniae
          elevation,
          percent_over1,
          percent_over2,
-         lat,
-         lon,
+         P,
+         N_perc,
          aspect,
          texture,
          corr_dN,
@@ -320,13 +321,14 @@ results$R_burtoniae
 
  #Full model
 sp <- as.matrix(fin_occ_df[,1:10])
-covar <- as.matrix(fin_occ_df[,11:24]) 
+covar <- as.matrix(fin_occ_df[,11:length(fin_occ_df)]) 
  
-occ_model_14Aug <- boral(sp,
-                         X = covar,
-                         family = "binomial",
-                         num.lv = 3,
-                         save.model = T)
+#occ_model_14Aug <- boral(sp,
+#                         X = covar,
+#                         family = "binomial",
+#                         num.lv = 3,
+#                         save.model = T,
+#                         calc.ics = T)
 
 save(occ_model_14Aug, file = "occ_model_14Aug.rda")
 
@@ -357,22 +359,23 @@ aucs <- ROCR::performance(pred_all, "auc")
 sp <- as.matrix(fin_occ_df[,1:10])
 covar <- as.matrix(scale(fin_occ_df[,11:24])) 
 
-occ_model_scaled_14Aug <- boral(sp,
+occ_model_scaled_nospat_17Aug <- boral(sp,
                          X = covar,
                          family = "binomial",
                          num.lv = 3,
-                         save.model = T)
+                         save.model = T, 
+                         calc.ics = T)
 
-save(occ_model_scaled_14Aug, file = "occ_model_scaled_14Aug.rda")
+save(occ_model_scaled_nospat_17Aug, file = "occ_model_scaled_nospat_17Aug.rda")
 
 
-plot.boral(occ_model_scaled_14Aug)
-summary(occ_model_scaled_14Aug)
-lvsplot(occ_model_scaled_14Aug)
+plot.boral(occ_model_scaled_nospat_17Aug)
+summary(occ_model_scaled_nospat_17Aug)
+lvsplot(occ_model_scaled_nospat_17Aug)
 
 
 par(mfrow = c(2,3))
-coefsplot("percent_over1", occ_model_scaled_14Aug)
+coefsplot("percent_over1", occ_model_scaled_nospat_17Aug)
 coefsplot("ph_et_al", occ_model_scaled_14Aug)
 coefsplot("percent_over1", occ_model_scaled_14Aug)
 coefsplot("carbon", occ_model_scaled_14Aug)
@@ -380,7 +383,7 @@ coefsplot("texture", occ_model_scaled_14Aug)
 coefsplot("Ca", occ_model_scaled_14Aug)
 
 
-var <- calc.varpart(occ_model_scaled_14Aug)
+var <- calc.varpart(occ_model_scaled_nospat_17Aug)
 part <- data.frame(enviro = var$varpart.X, bio = var$varpart.lv)
 barplot(as.matrix(t(part)), las = 2, col = c("brown4", "light green"))
 
@@ -402,8 +405,8 @@ ggplot(bardat, aes(x=Species, y=variance, fill = type)) +
 
 ?element_text
 
-envcors <- get.enviro.cor(occ_model_scaled_14Aug)
-rescors <- get.residual.cor(occ_model_scaled_14Aug)
+envcors <- get.enviro.cor(occ_model_scaled_nospat_17Aug)
+rescors <- get.residual.cor(occ_model_scaled_nospat_17Aug)
 corrplot(envcors$cor)
 corrplot(envcors$sig.cor, order = "hclust")
 corrplot(rescors$correlation, order = "AOE", type = "lower")
@@ -416,7 +419,7 @@ qgraph::qgraph(rescors$sig.correlaton, shape="circle", posCol="darkgreen", negCo
 #Caterpillar plots
 
 
-mod <- train_occ_scaled_14Aug
+mod <- occ_model_scaled_nospat_17Aug
 par(mfrow = c(1,2))
 
 for (i in 1:10) {
@@ -450,7 +453,7 @@ for (i in 1:10) {
   segments(
     x0 = mod$hpdintervals$X.coefs[i, 1:14, "lower"],
     y0 = 1:14,
-    x1 = occ_model_scaled_14Aug$hpdintervals$X.coefs[i, 1:14, "upper"],
+    x1 = mod$hpdintervals$X.coefs[i, 1:14, "upper"],
     y1 = 1:14,
     col = col.seq
   )
@@ -461,7 +464,7 @@ for (i in 1:10) {
 
 #Predicting occurrence with model ####
 
-mod_fit <- fitted.boral(occ_model_scaled_14Aug, est = "mean")
+mod_fit <- fitted.boral(occ_model_scaled_nospat_17Aug, est = "mean")
 pred <- as.data.frame(mod_fit$out)
 summary(pred)
 plot(pred$C_spissum ~ jitter(fin_occ_df$C_spissum))
@@ -528,16 +531,16 @@ plots_1 <- site_occ %>%
 sp <- as.matrix(plots_23[,2:11])
 covar <- as.matrix(scale(plots_23[,12:25])) 
 
-plots23_15Aug <- boral(sp,
+plots23_19Aug <- boral(sp,
                                 X = covar,
                                 family = "binomial",
                                 num.lv = 3,
                                 save.model = T)
-save(plots23_15Aug, file = "plots23_15Aug.rda")
+save(plots23_19Aug, file = "plots23_19Aug.rda")
 
 plot.boral(plots23_15Aug)
 
-newpred <- predict.boral(plots23_15Aug, 
+newpred <- predict.boral(plots23_19Aug, 
                          newX = plots_1[,12:25], 
                          predict.type = "marginal",
                          est = "mean")
@@ -568,16 +571,16 @@ plots_3 <- site_occ %>%
 sp <- as.matrix(plots_12[,2:11])
 covar <- as.matrix(scale(plots_12[,12:25])) 
 
-plots12_15Aug <- boral(sp,
+plots12_17Aug <- boral(sp,
                        X = covar,
                        family = "binomial",
                        num.lv = 3,
                        save.model = T)
-save(plots12_15Aug, file = "plots12_15Aug.rda")
+save(plots12_17Aug, file = "plots12_15Aug.rda")
 
 plot.boral(plots12_15Aug)
 
-newpred2 <- predict.boral(plots12_15Aug, 
+newpred2 <- predict.boral(plots12_17Aug, 
                          newX = plots_3[,12:25], 
                          predict.type = "marginal",
                          est = "mean")

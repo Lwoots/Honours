@@ -86,54 +86,7 @@ rm(sp_occ, nb_sp, nb_soil, occ_site_df)
 
 ### Identifying important covariates
 
-I first created a correlation matrix and filtered those variables that had a |0.7| correlation or greater. These were then plotted against each other.
-
-```{r, fig.width=9}
-
-corr_vars <- occ_df %>% select(acidity,
-                               Mg,
-                               Na,
-                               K,
-                               Clay,
-                               Silt,
-                               Sand,
-                               conductivity_ms,
-                               ph_kcl, 
-                               C_perc, 
-                               corr_dC,
-                               C_N_ratio) %>% 
-                         cor()
-corrplot::corrplot(corr_vars, type = "lower", method = "number")
-```
-
-There were strong correlations between pH, acidity, Mg, K and corrected dC. The pH was used as a proxy variable and renamed ph_et_al. Clay, silt and sand formed another group. Clay was used as a proxy and renamed texture. Conductivity and Na were correlated; the latter was chosen and renamed salt. Finally, there was a correlation between C_N_ratio and percent C; C_N_ration was renamed carbon. Munsell colour was also excluded.
-
-```{r}
-dat_occ <- cbind(occ_df[,1:10], occ_df %>% select(lon, 
-                                                  lat,
-                                                  percent_over1,
-                                                  percent_over2,
-                                                  Ca,
-                                                  Na,
-                                                  P,
-                                                  Olsen,
-                                                  Clay,
-                                                  ph_kcl, 
-                                                  N_perc,
-                                                  corr_dN,
-                                                  C_N_ratio,
-                                                  elevation,
-                                                  slope,
-                                                  aspect,
-                                                  drainage, 
-                                                  Q_cover))
-colnames(dat_occ)[colnames(dat_occ) == "ph_kcl"] <- "ph_et_al"
-colnames(dat_occ)[colnames(dat_occ) == "Clay"] <- "texture"
-colnames(dat_occ)[colnames(dat_occ) == "Na"] <- "salt"
-colnames(dat_occ)[colnames(dat_occ) == "C_N_ratio"] <- "carbon"
-```
-
-A BRT was then run for each species with the above covariates (Tc = 2, lr = 0.0005). A variable was selected for the JSDM analysis if it had a relative importance of 5% in at least one of the BRTs. The final variables are shown below. Interestingly, neither inorganic nor Olsen P was influential.
+Redid the variable choice analysis in http://rpubs.com/Chopin/412588 but with lon and lat excluded. P and perc_N showed up as having a relative influence of 5% in at least one of the BRT models. The final variables used are below.
 
 ```{r}
  fin_occ_df <- dat_occ %>% 
@@ -146,8 +99,8 @@ A BRT was then run for each species with the above covariates (Tc = 2, lr = 0.00
          elevation,
          percent_over1,
          percent_over2,
-         lat,
-         lon,
+         P,
+         N_perc,
          aspect,
          texture,
          corr_dN,
@@ -157,19 +110,10 @@ A BRT was then run for each species with the above covariates (Tc = 2, lr = 0.00
 
 ##Fitting the JSDM 
 
-First ran a model using all 150 plots, and three latent variables. However, the diagnostic plots looked unpromising.
-
-```{r, echo = F, warning=F, message=F}
-load("/Users/larawootton/Documents/Honours/Data/occ_model_14Aug.rda")
-par(mfrow = c(2,2))
-plot.boral(occ_model_14Aug)
-abline(0,1)
-```
-
-I then retried after scaling the covariates. First centering is done by subtracting the column means of x from their corresponding columns. Then scaling is done by dividing the (centered) columns of x by their standard deviations. The author of boral did this in one of his examples. The diagnostic plots of this model looked much better. From now on I'll be using scaled covariates.
+The model fit looked good with scaled covariates.
 
 ```{r, echo = F, warning=F}
-load("/Users/larawootton/Documents/Honours/Data/occ_model_scaled_14Aug.rda")
+load("/Users/larawootton/Documents/Honours/Data/occ_model_scaled_nospat_17Aug.rda")
 par(mfrow = c(2,2))
 plot.boral(occ_model_scaled_14Aug)
 abline(0,1)
@@ -180,7 +124,7 @@ abline(0,1)
 The above model was used to predict onto the same data. The AUC values were all close to one, suggesting a very good predictive power.
 
 ```{r, echo=F}
-mod_fit <- fitted.boral(occ_model_scaled_14Aug, est = "mean")
+mod_fit <- fitted.boral(occ_model_scaled_nospat_17Aug, est = "mean")
 pred <- as.data.frame(mod_fit$out)
 
 
@@ -199,7 +143,7 @@ knitr::kable(data.frame(Species = colnames(fin_occ_df[,1:10]), AUC = unlist(aucs
 Let's use **sites 2 and 3** to predict site 1. Some species are predicted really well, others very badly.
 
 ```{r, cache=T, include=F}
-load("/Users/larawootton/Documents/Honours/Data/plots23_15Aug.rda")
+load("/Users/larawootton/Documents/Honours/Data/plots23_17Aug.rda")
 
 site_occ <- cbind(site = sites, fin_occ_df)
 plots_23 <- site_occ %>% 
@@ -405,7 +349,7 @@ qgraph::qgraph(rescors2$sig.correlaton, shape="circle", posCol="darkgreen", negC
 Full model
 
 ```{r, echo=F, fig.width=11, fig.height=4}
-mod <- occ_model_scaled_14Aug
+mod <- occ_model_scaled_nospat_17Aug
 par(mfrow = c(1,5))
 
 for (i in 1:5) {
@@ -450,7 +394,7 @@ for (i in 1:5) {
 ```
 
 ```{r, echo=F, fig.width=11, fig.height=4}
-mod <- occ_model_scaled_14Aug
+mod <- occ_model_scaled_nospat_17Aug
 par(mfrow = c(1,5))
 
 for (i in 6:10) {
