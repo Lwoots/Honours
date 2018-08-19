@@ -10,7 +10,7 @@ rm(list = ls())
 setwd("/Users/larawootton/Documents/Honours/Data")
 
 if(!require(pacman)){install.packages("pacman", dependencies=TRUE); library(pacman)}
-p_load(dplyr, dismo, gbm, foreach, doParallel, TeachingDemos, boral, corrplot, pROC, ggplot2. ROCR)
+p_load(dismo, gbm, foreach, doParallel, TeachingDemos, boral, corrplot, pROC, ggplot2, dplyr)
 
 source("/Users/larawootton/Documents/Honours/Project_analysis/to_be_sourced.R")
 
@@ -331,6 +331,7 @@ covar <- as.matrix(fin_occ_df[,11:length(fin_occ_df)])
 #                         calc.ics = T)
 
 save(occ_model_14Aug, file = "occ_model_14Aug.rda")
+load("occ_model_14Aug.rda")
 
 plot.boral(occ_model_14Aug)
 summary(occ_model_14Aug)
@@ -473,35 +474,36 @@ plot(roc1)
 
 #Predicting occurrence onto new data ####
 #Random 50% of plots
-rplots <- sample(150, 75)
-rplots <- c(76, 37, 32,28,116,23, 48,16, 146, 45,18, 132,88, 5, 43, 126, 59, 118,  38,  31,  93, 123, 136, 100,3,57,  86,80,  13, 115, 112, 1, 33, 150,  68, 72,96, 41, 95,  15,  63, 7, 29,  17,20,40, 109, 142,51, 67,19,79, 71,56, 149, 139, 65, 39, 6, 114, 104, 141, 145, 92, 49,55, 46, 130,66, 144, 60,61, 137,  47,  87)
+rplots_19aug <- sample(150, 100)
+#rplots <- c(76, 37, 32,28,116,23, 48,16, 146, 45,18, 132,88, 5, 43, 126, 59, 118,  38,  31,  93, 123, 136, 100,3,57,  86,80,  13, 115, 112, 1, 33, 150,  68, 72,96, 41, 95,  15,  63, 7, 29,  17,20,40, 109, 142,51, 67,19,79, 71,56, 149, 139, 65, 39, 6, 114, 104, 141, 145, 92, 49,55, 46, 130,66, 144, 60,61, 137,  47,  87)
+save(rplots_19aug, file = "rplots_19aug.rda")
 
-train_occ <- fin_occ_df[rplots,]
+train_occ <- fin_occ_df[rplots_19aug,]
 
 sp <- as.matrix(train_occ[,1:10])
 covar <- as.matrix(scale(train_occ[,11:24])) 
 
-train_occ_scaled_14Aug <- boral(sp,
+train_occ_scaled_19Aug <- boral(sp,
                                 X = covar,
                                 family = "binomial",
                                 num.lv = 3,
                                 save.model = T)
 
-save(train_occ_scaled_14Aug, file = "train_occ_scaled_14Aug.rda")
-load("train_occ_scaled_15Aug.rda")
-plot.boral(train_occ_scaled_14Aug)
+save(train_occ_scaled_19Aug, file = "train_occ_scaled_19Aug.rda")
+load("train_occ_scaled_19Aug.rda")
+plot.boral(train_occ_scaled_19Aug)
 
-mod_fit <- fitted.boral(train_occ_scaled_14Aug, est = "mean")
+mod_fit <- fitted.boral(train_occ_scaled_19Aug, est = "mean")
 pred <- as.data.frame(mod_fit$out)
 summary(pred)
 plot(pred$C_spissum ~ jitter(train_occ$C_spissum))
 roc1 <- roc(train_occ$C_spissum, pred$C_spissum)
 plot(roc1)
 
-test_occ <- fin_occ_df[-rplots,]
+test_occ <- fin_occ_df[-rplots_19aug,]
 test_covar <- as.matrix(scale(test_occ[,11:24])) 
 
-newpred <- predict.boral(train_occ_scaled_14Aug, 
+newpred <- predict.boral(train_occ_scaled_19Aug, 
                          newX = test_covar, 
                          predict.type = "marginal",
                          est = "mean")
@@ -571,12 +573,12 @@ plots_3 <- site_occ %>%
 sp <- as.matrix(plots_12[,2:11])
 covar <- as.matrix(scale(plots_12[,12:25])) 
 
-plots12_17Aug <- boral(sp,
+plots12_19Aug <- boral(sp,
                        X = covar,
                        family = "binomial",
                        num.lv = 3,
                        save.model = T)
-save(plots12_17Aug, file = "plots12_15Aug.rda")
+save(plots12_19Aug, file = "plots12_19Aug.rda")
 
 plot.boral(plots12_15Aug)
 
@@ -603,17 +605,17 @@ plots_2 <- site_occ %>%
 sp <- as.matrix(plots_13[,2:11])
 covar <- as.matrix(scale(plots_13[,12:25])) 
 
-plots13_15Aug <- boral(sp,
+plots13_19Aug <- boral(sp,
                        X = covar,
                        family = "binomial",
                        num.lv = 3,
                        save.model = T)
 
-save(plots13_15Aug, file = "plots13_15Aug.rda")
+save(plots13_19Aug, file = "plots13_1Aug.rda")
 
 plot.boral(plots13_15Aug)
 
-newpred3 <- predict.boral(plots13_15Aug, 
+newpred3 <- predict.boral(plots13_19Aug, 
                           newX = plots_2[,12:25], 
                           predict.type = "marginal",
                           est = "mean")
