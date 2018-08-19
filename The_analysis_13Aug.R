@@ -58,6 +58,8 @@ abn_df <- left_join(nb_sp, nb_soil, by = "plot") %>% #Bind soil vars to species
   filter(!is.na(type)) %>% #Remove rows that we don't have data for
   select(-type, -site) #Don't need these 
 
+abn_df <- na.omit(abn_df)
+
 glimpse(abn_df)
 
 #Create occurrence df
@@ -149,6 +151,33 @@ colnames(dat_occ)[colnames(dat_occ) == "Clay"] <- "texture"
 colnames(dat_occ)[colnames(dat_occ) == "Na"] <- "salt"
 colnames(dat_occ)[colnames(dat_occ) == "C_N_ratio"] <- "carbon"
 
+#Abundance df
+
+dat_abn <- cbind(abn_df[,2:11], abn_df %>% select(
+  percent_over1,
+  percent_over2,
+  Ca,
+  Na,
+  P,
+  Olsen,
+  Clay,
+  ph_kcl, 
+  N_perc,
+  corr_dN,
+  C_N_ratio,
+  elevation,
+  slope,
+  aspect,
+  drainage, 
+  Q_cover))
+
+colnames(dat_abn)[colnames(dat_abn) == "ph_kcl"] <- "ph_et_al"
+colnames(dat_abn)[colnames(dat_abn) == "Clay"] <- "texture"
+colnames(dat_abn)[colnames(dat_abn) == "Na"] <- "salt"
+colnames(dat_abn)[colnames(dat_abn) == "C_N_ratio"] <- "carbon"
+
+glimpse(dat_abn)
+
 rm(corr_vars, corr_vars2, big_corr, corr_mx)
 
 
@@ -156,8 +185,8 @@ rm(corr_vars, corr_vars2, big_corr, corr_mx)
 
 #Occurrence
 
-brt_var <- c(12:45)
-response <- 4
+brt_var <- c(11:26)
+response <-5
 tree.com <- 10
 learn <- 0.001
 
@@ -170,10 +199,10 @@ cores <- detectCores()
 step.train.fx = function(tree.com, learn){
   #set seed for reproducibility
   char2seed("StackOverflow", set = TRUE)
-  k1 <- gbm.step(data = occ_df, 
+  k1 <- gbm.step(data = dat_abn, 
                  gbm.x = brt_var, 
                  gbm.y = response,
-                 family = "bernoulli", 
+                 family = "poisson", 
                  tree.complexity = tree.com,
                  learning.rate = learn,
                  bag.fraction = 0.7,
@@ -251,13 +280,72 @@ write.csv(train.results_out, "/Users/larawootton/Documents/Honours/Data/BRT_outp
 
 #Run BRTs ####
 
+#Abundance
+#TC = 4, LR = 0.0001
+
+brt_var <- c(11:length(abn_occ))
+tree.com <- 4
+learn <- 0.0001
+
+results <- list()
+psuedoR2 <- matrix(nrow = 10, ncol = 2, dimnames = list(NULL, c("species", "R2")))
+
+
+for (i in 1:10) {
+  
+  brt_results <- gbm.step(dat_abn,
+                          gbm.x = brt_var,
+                          gbm.y = i,
+                          plot.main = TRUE,
+                          family = "poisson",
+                          step.size = 50,
+                          tree.complexity = tree.com,
+                          learning.rate = learn,
+                          max.trees=10000,
+                          n.folds = 10,
+                          bag.fraction = 0.5
+  )
+  
+  species <- names(dat_abn[i])
+  
+  results[[species]] <- brt_results
+  
+  psuedoR2[i,] <- c(species = species, R2 = 1-(brt_results$cv.statistics$deviance.mean/brt_results$self.statistics$mean.null))
+  
+}
+
+
+results
+as.data.frame(psuedoR2)
+
+summary(results$C_spissum)
+results$R_burtoniae
+
+fin_abn_df <- dat_abn %>% 
+  select(1:10, 
+         ph_et_al,
+         salt,
+         carbon,
+         Ca,
+         Q_cover,
+         elevation,
+         percent_over1,
+         percent_over2,
+         P,
+         N_perc,
+         aspect,
+         texture,
+         corr_dN,
+         drainage,
+         slope)
+
 #Ocurrence
 
 #Optimising process showed that TC = 2, LR = 0.0005
 
 brt_var <- c(11:length(dat_occ))
-tree.com <- 2
-learn <- 0.0005
+tree.com <- 3
+learn <- 0.01
 
 
 results <- list()
@@ -291,7 +379,7 @@ for (i in 1:10) {
 results
 as.data.frame(psuedoR2)
 
-summary(results$Dicrocaulon_sp)
+summary(results$A_fissum)
 results$R_burtoniae
 
 #Choose variables that have 5% relative influence for at least one sp.
@@ -313,13 +401,100 @@ results$R_burtoniae
          corr_dN,
          drainage)
 
-#Abundance
+
+ 
+ #JSDM ####
+
+ #Abundance
+ 
+ sp <- as.matrix(fin_abn_df[,1:10])
+ covar <- as.matrix(fin_abn_df[,11:length(fin_abn_df)]) 
+ 
+ abn_model_19Aug <- boral(sp,
+                          X = covar,
+                          family = "negative.binomial",
+                          num.lv = 3,
+                          save.model = T,
+                          calc.ics = T)
+ save(abn_model_19Aug, file = "abn_model_19Aug.rda")
+ 
+ plot.boral(abn_model_19Aug)
+ abline(0,1)
+ 
+ #Scaled abundance
+ 
+ sp <- as.matrix(fin_abn_df[,1:10])
+ covar <- as.matrix(scale(fin_abn_df[,11:length(fin_abn_df)]))
+ 
+ abn_model_scaled_19Aug <- boral(sp,
+                          X = covar,
+                          family = "negative.binomial",
+                          num.lv = 3,
+                          save.model = T,
+                          calc.ics = T)
+save(abn_model_scaled_19Aug, file = "abn_model_scaled_19Aug.rda")
+
+plot.boral(abn_model_scaled_19Aug)
+abline(0,1) 
+ 
+summary(abn_model_scaled_19Aug)
+
+mod_fit <- fitted.boral(abn_model_scaled_19Aug, est = "mean")
+pred <- as.data.frame(mod_fit$out)
+
+plot(pred$R_burtoniae ~ fin_abn_df$R_burtoniae,
+     ylab = "Predicted",
+     xlab = "",
+     main = "R_burtoniae")
+abline(0,1)
+plot(pred$R_comptonii ~ fin_abn_df$R_comptonii,
+     xlab = "",
+     ylab = "",
+     main = "R_comptonii")
+abline(0,1)
+plot(pred$D_diversifolium ~ fin_abn_df$D_diversifolium,
+     ylab = "Predicted",
+     xlab = "",
+     main = "D_diversifolium")
+abline(0,1)
+plot(pred$A_delaetii ~ fin_abn_df$A_delaetii,
+     xlab = "",
+     ylab = "",
+     main = "A_delaetii")
+abline(0,1)
+plot(pred$A_fissum ~ fin_abn_df$A_fissum,
+     ylab = "Predicted",
+     xlab = "",
+     main = "A_fissum")
+abline(0,1)
+plot(pred$A_framesii ~ fin_abn_df$A_framesii,
+     xlab = "",
+     ylab = "",
+     main = "A_framesii")
+abline(0,1)
+plot(pred$C_spissum ~ fin_abn_df$C_spissum,
+     ylab = "Predicted",
+     xlab = "",
+     main = "C_spissum")
+abline(0,1)
+plot(pred$C_staminodiosum ~ fin_abn_df$C_staminodiosum,
+     xlab = "",
+     ylab = "",
+     main = "C_staminodiosum")
+abline(0,1)
+plot(pred$Dicrocaulon_sp ~ fin_abn_df$Dicrocaulon_sp,
+     ylab = "Predicted",
+     xlab = "Observed",
+     main = "Dicrocaulon_sp")
+abline(0,1)
+plot(pred$Oophytum_sp ~ fin_abn_df$Oophytum_sp,
+     ylab = "Observed",
+     xlab = "",
+     main = "Oophytum_sp")
+abline(0,1)
 
 
-
-#JSDM ####
-
- #Full model
+#Full model occurrence
 sp <- as.matrix(fin_occ_df[,1:10])
 covar <- as.matrix(fin_occ_df[,11:length(fin_occ_df)]) 
  
