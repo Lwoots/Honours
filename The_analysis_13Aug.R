@@ -439,59 +439,59 @@ abline(0,1)
  
 summary(abn_model_scaled_19Aug)
 
-mod_fit <- fitted.boral(abn_model_scaled_19Aug, est = "mean")
-pred <- as.data.frame(mod_fit$out)
+#Scaled abundance poisson
 
-plot(pred$R_burtoniae ~ fin_abn_df$R_burtoniae,
-     ylab = "Predicted",
-     xlab = "",
-     main = "R_burtoniae")
-abline(0,1)
-plot(pred$R_comptonii ~ fin_abn_df$R_comptonii,
-     xlab = "",
-     ylab = "",
-     main = "R_comptonii")
-abline(0,1)
-plot(pred$D_diversifolium ~ fin_abn_df$D_diversifolium,
-     ylab = "Predicted",
-     xlab = "",
-     main = "D_diversifolium")
-abline(0,1)
-plot(pred$A_delaetii ~ fin_abn_df$A_delaetii,
-     xlab = "",
-     ylab = "",
-     main = "A_delaetii")
-abline(0,1)
-plot(pred$A_fissum ~ fin_abn_df$A_fissum,
-     ylab = "Predicted",
-     xlab = "",
-     main = "A_fissum")
-abline(0,1)
-plot(pred$A_framesii ~ fin_abn_df$A_framesii,
-     xlab = "",
-     ylab = "",
-     main = "A_framesii")
-abline(0,1)
-plot(pred$C_spissum ~ fin_abn_df$C_spissum,
-     ylab = "Predicted",
-     xlab = "",
-     main = "C_spissum")
-abline(0,1)
-plot(pred$C_staminodiosum ~ fin_abn_df$C_staminodiosum,
-     xlab = "",
-     ylab = "",
-     main = "C_staminodiosum")
-abline(0,1)
-plot(pred$Dicrocaulon_sp ~ fin_abn_df$Dicrocaulon_sp,
-     ylab = "Predicted",
-     xlab = "Observed",
-     main = "Dicrocaulon_sp")
-abline(0,1)
-plot(pred$Oophytum_sp ~ fin_abn_df$Oophytum_sp,
-     ylab = "Observed",
-     xlab = "",
-     main = "Oophytum_sp")
-abline(0,1)
+abn_model_scaled_pois_20Aug <- boral(sp,
+                                X = covar,
+                                family = "poisson",
+                                num.lv = 3,
+                                save.model = T,
+                                calc.ics = T)
+save(abn_model_scaled_pois_20Aug, file = "abn_model_scaled_pois_20Aug.rda")
+
+
+mod <- abn_model_scaled_19Aug
+par(mfrow = c(1,5))
+
+for (i in 1:10) {
+  col.seq <-
+    rep("black", length(mod$hpdintervals$X.coefs[i, 1:15, "lower"]))
+  col.seq[mod$hpdintervals$X.coefs[i, 1:15, "lower"] < 0 &
+            mod$hpdintervals$X.coefs[i, 1:15, "upper"] > 0] <- "grey"
+  
+  plot(
+    x = c(mod$X.coefs.mean[i, 1:15]),
+    y = 1:15,
+    yaxt = "n",
+    ylab = "",
+    xlab = rownames(mod$X.coefs.mean)[i],
+    col = col.seq,
+    xlim = c(
+      min(mod$hpdintervals$X.coefs[, 1:15, "lower"]),
+      max(mod$hpdintervals$X.coefs[, 1:15, "upper"])
+    ),
+    pch = "x"
+  )
+  
+  axis(
+    2,
+    labels = colnames(mod$X.coefs.mean),
+    at = 1:15,
+    las = 2,
+    cex.axis = 0.75
+  )
+  
+  segments(
+    x0 = mod$hpdintervals$X.coefs[i, 1:15, "lower"],
+    y0 = 1:15,
+    x1 = mod$hpdintervals$X.coefs[i, 1:15, "upper"],
+    y1 = 1:15,
+    col = col.seq
+  )
+  abline(v = 0, lty = 3)
+  
+}
+
 
 
 #Full model occurrence
@@ -640,6 +640,63 @@ for (i in 1:10) {
 
 #Predicting occurrence with model ####
 
+#Abundance
+
+mod_fit <- fitted.boral(abn_model_scaled_19Aug, est = "mean")
+pred <- as.data.frame(mod_fit$out)
+
+plot(pred$R_burtoniae ~ fin_abn_df$R_burtoniae,
+     ylab = "Predicted",
+     xlab = "",
+     main = "R_burtoniae")
+abline(0,1)
+plot(pred$R_comptonii ~ fin_abn_df$R_comptonii,
+     xlab = "",
+     ylab = "",
+     main = "R_comptonii")
+abline(0,1)
+plot(pred$D_diversifolium ~ fin_abn_df$D_diversifolium,
+     ylab = "Predicted",
+     xlab = "",
+     main = "D_diversifolium")
+abline(0,1)
+plot(pred$A_delaetii ~ fin_abn_df$A_delaetii,
+     xlab = "",
+     ylab = "",
+     main = "A_delaetii")
+abline(0,1)
+plot(pred$A_fissum ~ fin_abn_df$A_fissum,
+     ylab = "Predicted",
+     xlab = "",
+     main = "A_fissum")
+abline(0,1)
+plot(pred$A_framesii ~ fin_abn_df$A_framesii,
+     xlab = "",
+     ylab = "",
+     main = "A_framesii")
+abline(0,1)
+plot(pred$C_spissum ~ fin_abn_df$C_spissum,
+     ylab = "Predicted",
+     xlab = "",
+     main = "C_spissum")
+abline(0,1)
+plot(pred$C_staminodiosum ~ fin_abn_df$C_staminodiosum,
+     xlab = "",
+     ylab = "",
+     main = "C_staminodiosum")
+abline(0,1)
+plot(pred$Dicrocaulon_sp ~ fin_abn_df$Dicrocaulon_sp,
+     ylab = "Predicted",
+     xlab = "Observed",
+     main = "Dicrocaulon_sp")
+abline(0,1)
+plot(pred$Oophytum_sp ~ fin_abn_df$Oophytum_sp,
+     ylab = "Observed",
+     xlab = "",
+     main = "Oophytum_sp")
+abline(0,1)
+
+#Occurrence
 mod_fit <- fitted.boral(occ_model_scaled_nospat_17Aug, est = "mean")
 pred <- as.data.frame(mod_fit$out)
 summary(pred)
@@ -648,6 +705,90 @@ roc1 <- roc(fin_occ_df$C_spissum, pred$C_spissum)
 plot(roc1)
 
 #Predicting occurrence onto new data ####
+
+#Abundance
+
+#Sites 2 and 3 onto 1
+site_abn <- cbind(site = sites, fin_abn_df)
+plots_23 <- site_abn %>% 
+  filter(!site == "site1")
+plots_1 <- site_abn %>% 
+  filter(site == "site1")
+
+sp <- as.matrix(plots_23[,2:11])
+covar <- as.matrix(scale(plots_23[,12:26])) 
+
+abn_plots23_19Aug <- boral(sp,
+                       X = covar,
+                       family = "negative.binomial",
+                       num.lv = 3,
+                       save.model = T)
+save(abn_plots23_19Aug, file = "abn_plots23_19Aug.rda")
+
+plot.boral(abn_plots23_19Aug)
+
+test_covar <- as.matrix(scale(plots_1[,12:26]))
+newpred <- predict.boral(abn_plots23_19Aug, 
+                         newX = test_covar, 
+                         predict.type = "marginal",
+                         est = "mean")
+pred <- exp(newpred$linpred)
+
+plot(pred[,1] ~ plots_1$R_burtoniae,
+     ylab = "Predicted",
+     xlab = "",
+     main = "R_burtoniae")
+abline(0,1)
+plot(pred[,2] ~ plots_1$R_comptonii,
+     xlab = "",
+     ylab = "",
+     main = "R_comptonii")
+abline(0,1)
+plot(pred[,3] ~ plots_1$D_diversifolium,
+     ylab = "Predicted",
+     xlab = "",
+     main = "D_diversifolium")
+abline(0,1)
+plot(pred[,4] ~ plots_1$A_delaetii,
+     xlab = "",
+     ylab = "",
+     main = "A_delaetii")
+abline(0,1)
+plot(pred[,5] ~ plots_1$A_fissum,
+     ylab = "Predicted",
+     xlab = "",
+     main = "A_fissum")
+abline(0,1)
+plot(pred[,6] ~ plots_1$A_framesii,
+     xlab = "",
+     ylab = "",
+     main = "A_framesii")
+abline(0,1)
+plot(pred[,7] ~ plots_1$C_spissum,
+     ylab = "Predicted",
+     xlab = "",
+     main = "C_spissum")
+abline(0,1)
+plot(pred[,8] ~ plots_1$C_staminodiosum,
+     xlab = "",
+     ylab = "",
+     main = "C_staminodiosum")
+abline(0,1)
+plot(pred[,9] ~ plots_1$Dicrocaulon_sp,
+     ylab = "Predicted",
+     xlab = "Observed",
+     main = "Dicrocaulon_sp")
+abline(0,1)
+plot(pred[,10] ~ plots_1$Oophytum_sp,
+     ylab = "Observed",
+     xlab = "",
+     main = "Oophytum_sp")
+abline(0,1)
+
+
+
+#Occurrence
+
 #Random 50% of plots
 rplots_19aug <- sample(150, 100)
 #rplots <- c(76, 37, 32,28,116,23, 48,16, 146, 45,18, 132,88, 5, 43, 126, 59, 118,  38,  31,  93, 123, 136, 100,3,57,  86,80,  13, 115, 112, 1, 33, 150,  68, 72,96, 41, 95,  15,  63, 7, 29,  17,20,40, 109, 142,51, 67,19,79, 71,56, 149, 139, 65, 39, 6, 114, 104, 141, 145, 92, 49,55, 46, 130,66, 144, 60,61, 137,  47,  87)
