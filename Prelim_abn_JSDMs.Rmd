@@ -1,0 +1,594 @@
+---
+title: "Prelim abundance JSDMs"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+if(!require(pacman)){install.packages("pacman", dependencies=TRUE); library(pacman)}
+p_load(boral, dplyr, ggplot2)
+
+source("/Users/larawootton/Documents/Honours/Project_analysis/to_be_sourced.R")
+
+#Select study species (those that are present in ten or more plots) 
+nb_sp <- species_df %>% select(plot, 
+                               ruschia_burtoniae,
+                               mesemb_1, 
+                               drosanthemum_diversifolium,
+                               a_delaetii,
+                               a_fissum,
+                               a_framesii,
+                               c_spissum,
+                               cephalophyllum_staminodiosum,
+                               dicrocaulon,
+                               oophytum) 
+
+
+names(nb_sp) <- c("plot", 
+                  "R_burtoniae", 
+                  "R_comptonii", 
+                  "D_diversifolium",
+                  "A_delaetii",
+                  "A_fissum",
+                  "A_framesii",
+                  "C_spissum",
+                  "C_staminodiosum",
+                  "Dicrocaulon_sp",
+                  "Oophytum_sp")
+
+nb_sp[is.na(nb_sp)] <- 0
+
+#Remove unimportant soil variables and lon lat, as they aren't technically environmental
+
+nb_soil <- my_soil_df %>% select(-c(munsell, hue, ph_h20, dN, dC, lon, lat))
+
+#Create abundance df
+
+abn_df <- left_join(nb_sp, nb_soil, by = "plot") %>% #Bind soil vars to species
+  filter(!is.na(type)) %>% #Remove rows that we don't have data for
+  select(-type) #Don't need these 
+
+abn_df <- na.omit(abn_df)
+sites <- abn_df$site
+abn_df <- abn_df %>% select(-site)
+
+dat_abn <- cbind(abn_df[,2:11], abn_df %>% select(
+  percent_over1,
+  percent_over2,
+  Ca,
+  Na,
+  P,
+  Olsen,
+  Clay,
+  ph_kcl, 
+  N_perc,
+  corr_dN,
+  C_N_ratio,
+  elevation,
+  slope,
+  aspect,
+  drainage, 
+  Q_cover))
+
+colnames(dat_abn)[colnames(dat_abn) == "ph_kcl"] <- "ph_et_al"
+colnames(dat_abn)[colnames(dat_abn) == "Clay"] <- "texture"
+colnames(dat_abn)[colnames(dat_abn) == "Na"] <- "salt"
+colnames(dat_abn)[colnames(dat_abn) == "C_N_ratio"] <- "carbon"
+```
+
+###Summary
+
+* Used the same variables as for occurrence, with the addition of slope.
+
+* The models parameterised with a negative binomial distribution showed extreme predicted outliers that were well outside the scope of the original data. 
+
+* A full poisson model predicted unexpectedly well onto itself, although there was a tendency to under predict.
+
+* Predictions onto new data were inaccurate, even with the poisson model 
+
+* Environmental variables explained a greater proportion of variance than they did for occurrence, which is unexpected. 
+
+####Covariates
+
+Using colinearity and at least 5% relative influence in BRT models as criteria, 15 variables were chosen.
+The same set used for occurrence data, but with slope.
+
+```{r}
+fin_abn_df <- dat_abn %>% 
+  select(1:10, 
+         ph_et_al,
+         salt,
+         carbon,
+         Ca,
+         Q_cover,
+         elevation,
+         percent_over1,
+         percent_over2,
+         P,
+         N_perc,
+         aspect,
+         texture,
+         corr_dN,
+         drainage,
+         slope)
+```
+
+####Negative binomial scaled model
+
+A negative binomial distribution was first used as the data are overdispersed.
+
+Diagnostic plots looked okay.
+
+
+```{r, echo = F}
+load("/Users/larawootton/Documents/Honours/Data/abn_model_scaled_19Aug.rda")
+par(mfrow = c(2,2))
+plot.boral(abn_model_scaled_19Aug)
+abline(0,1)
+```
+
+###Predictions negative binomial
+
+There was a general pattern where there model would predict most plots fairly well, but then have a few predicted points that are orders of magnitude greater than anything in the dataset. This suggests that the model is misspecified somehow, despite the residuals looking okay. 
+
+Using two sites to predict onto the third showed similar outliers.
+
+```{r, echo=F}
+par(mfrow = c(1,2))
+
+mod_fit <- fitted.boral(abn_model_scaled_19Aug, est = "mean")
+pred <- as.data.frame(mod_fit$out)
+
+plot(pred$R_burtoniae ~ fin_abn_df$R_burtoniae,
+     ylab = "Predicted",
+     xlab = "",
+     main = "R_burtoniae")
+abline(0,1)
+plot(pred$R_comptonii ~ fin_abn_df$R_comptonii,
+     xlab = "",
+     ylab = "",
+     main = "R_comptonii")
+abline(0,1)
+plot(pred$D_diversifolium ~ fin_abn_df$D_diversifolium,
+     ylab = "Predicted",
+     xlab = "",
+     main = "D_diversifolium")
+abline(0,1)
+plot(pred$A_delaetii ~ fin_abn_df$A_delaetii,
+     xlab = "",
+     ylab = "",
+     main = "A_delaetii")
+abline(0,1)
+plot(pred$A_fissum ~ fin_abn_df$A_fissum,
+     ylab = "Predicted",
+     xlab = "",
+     main = "A_fissum")
+abline(0,1)
+plot(pred$A_framesii ~ fin_abn_df$A_framesii,
+     xlab = "",
+     ylab = "",
+     main = "A_framesii")
+abline(0,1)
+plot(pred$C_spissum ~ fin_abn_df$C_spissum,
+     ylab = "Predicted",
+     xlab = "",
+     main = "C_spissum")
+abline(0,1)
+plot(pred$C_staminodiosum ~ fin_abn_df$C_staminodiosum,
+     xlab = "",
+     ylab = "",
+     main = "C_staminodiosum")
+abline(0,1)
+plot(pred$Dicrocaulon_sp ~ fin_abn_df$Dicrocaulon_sp,
+     ylab = "Predicted",
+     xlab = "Observed",
+     main = "Dicrocaulon_sp")
+abline(0,1)
+plot(pred$Oophytum_sp ~ fin_abn_df$Oophytum_sp,
+     ylab = "",
+     xlab = "Observed",
+     main = "Oophytum_sp")
+abline(0,1)
+```
+
+####Maybe there are just a few plots that are causing the outliers?
+
+Doesn't look like it.
+
+```{r}
+which(pred[,2] > 20) #R_comptonii
+which(pred[,5] > 20) #A_fissum
+which(pred[,6] > 6000) #A_framesii
+which(pred[,8] > 60) #C_staminodiosum
+which(pred[,9] > 150) #Dicrocaulon
+which(pred[,10] > 100) #Oophytum
+
+
+```
+
+###Poisson scaled model
+
+Used poisson distribution to see if fits better.
+
+```{r, echo = F}
+load("/Users/larawootton/Documents/Honours/Data/abn_model_scaled_pois_20Aug.rda")
+par(mfrow = c(2,2))
+plot.boral(abn_model_scaled_pois_20Aug)
+abline(0,1)
+```
+
+###Predictions poisson {.tabset .tabset-fade}
+
+This model predicts surprisingly well onto itself, with no more giant outliers. However, it does tend to under predict.
+
+Predicting onto different sites didn't go well. Most either an order of magnitude too large or too small. The randomly selected plots were slightly better, but still not particularly impressive.
+
+See the tabs below.
+
+####Full model
+```{r, echo=F}
+mod_fit <- fitted.boral(abn_model_scaled_pois_20Aug, est = "mean")
+pred <- as.data.frame(mod_fit$out)
+
+par(mfrow = c(1,2))
+plot(pred$R_burtoniae ~ fin_abn_df$R_burtoniae,
+     ylab = "Predicted",
+     xlab = "",
+     main = "R_burtoniae")
+abline(0,1)
+plot(pred$R_comptonii ~ fin_abn_df$R_comptonii,
+     xlab = "",
+     ylab = "",
+     main = "R_comptonii")
+abline(0,1)
+plot(pred$D_diversifolium ~ fin_abn_df$D_diversifolium,
+     ylab = "Predicted",
+     xlab = "",
+     main = "D_diversifolium")
+abline(0,1)
+plot(pred$A_delaetii ~ fin_abn_df$A_delaetii,
+     xlab = "",
+     ylab = "",
+     main = "A_delaetii")
+abline(0,1)
+plot(pred$A_fissum ~ fin_abn_df$A_fissum,
+     ylab = "Predicted",
+     xlab = "",
+     main = "A_fissum")
+abline(0,1)
+plot(pred$A_framesii ~ fin_abn_df$A_framesii,
+     xlab = "",
+     ylab = "",
+     main = "A_framesii")
+abline(0,1)
+plot(pred$C_spissum ~ fin_abn_df$C_spissum,
+     ylab = "Predicted",
+     xlab = "",
+     main = "C_spissum")
+abline(0,1)
+plot(pred$C_staminodiosum ~ fin_abn_df$C_staminodiosum,
+     xlab = "",
+     ylab = "",
+     main = "C_staminodiosum")
+abline(0,1)
+plot(pred$Dicrocaulon_sp ~ fin_abn_df$Dicrocaulon_sp,
+     ylab = "Predicted",
+     xlab = "Observed",
+     main = "Dicrocaulon_sp")
+abline(0,1)
+plot(pred$Oophytum_sp ~ fin_abn_df$Oophytum_sp,
+     ylab = "Predicted",
+     xlab = "",
+     main = "Oophytum_sp")
+abline(0,1)
+```
+
+####Sites 2&3
+
+Predict site 1 with site 2 & 3 data.
+
+```{r, echo=F, cache=T, include=F}
+load("/Users/larawootton/Documents/Honours/Data/abn_plots23_pois_20Aug.rda")
+
+site_abn <- cbind(site = sites, fin_abn_df)
+plots_23 <- site_abn %>% 
+  filter(!site == "site1")
+plots_1 <- site_abn %>% 
+  filter(site == "site1")
+
+test_covar <- as.matrix(scale(plots_1[,12:26]))
+newpred1 <- predict.boral(abn_plots23_pois_20Aug, 
+                         newX = test_covar, 
+                         predict.type = "marginal",
+                         est = "mean")
+```
+```{r, echo = F}
+pred <- exp(newpred1$linpred)
+
+par(mfrow = c(1,2))
+plot(pred[,1] ~ plots_1$R_burtoniae,
+     ylab = "Predicted",
+     xlab = "",
+     main = "R_burtoniae")
+abline(0,1)
+plot(pred[,2] ~ plots_1$R_comptonii,
+     xlab = "",
+     ylab = "",
+     main = "R_comptonii")
+abline(0,1)
+plot(pred[,3] ~ plots_1$D_diversifolium,
+     ylab = "Predicted",
+     xlab = "",
+     main = "D_diversifolium")
+abline(0,1)
+plot(pred[,4] ~ plots_1$A_delaetii,
+     xlab = "",
+     ylab = "",
+     main = "A_delaetii")
+abline(0,1)
+plot(pred[,5] ~ plots_1$A_fissum,
+     ylab = "Predicted",
+     xlab = "",
+     main = "A_fissum")
+abline(0,1)
+plot(pred[,6] ~ plots_1$A_framesii,
+     xlab = "",
+     ylab = "",
+     main = "A_framesii")
+abline(0,1)
+plot(pred[,7] ~ plots_1$C_spissum,
+     ylab = "Predicted",
+     xlab = "",
+     main = "C_spissum")
+abline(0,1)
+plot(pred[,8] ~ plots_1$C_staminodiosum,
+     xlab = "",
+     ylab = "",
+     main = "C_staminodiosum")
+abline(0,1)
+plot(pred[,9] ~ plots_1$Dicrocaulon_sp,
+     ylab = "Predicted",
+     xlab = "Observed",
+     main = "Dicrocaulon_sp")
+abline(0,1)
+plot(pred[,10] ~ plots_1$Oophytum_sp,
+     ylab = "Predicted",
+     xlab = "",
+     main = "Oophytum_sp")
+abline(0,1)
+```
+
+####Sites 1&2
+
+Predict site 3 with site 1 & 2 data.
+
+```{r, echo=F, cache=T, include=F}
+load("/Users/larawootton/Documents/Honours/Data/abn_plots12_pois_20Aug.rda")
+
+site_abn <- cbind(site = sites, fin_abn_df)
+plots_12 <- site_abn %>% 
+  filter(!site == "site3")
+plots_3 <- site_abn %>% 
+  filter(site == "site3")
+
+test_covar <- as.matrix(scale(plots_3[,12:26]))
+newpred2 <- predict.boral(abn_plots12_pois_20Aug, 
+                         newX = test_covar, 
+                         predict.type = "marginal",
+                         est = "mean")
+```
+```{r, echo=F}
+pred <- exp(newpred2$linpred)
+
+par(mfrow = c(1,2))
+plot(pred[,1] ~ plots_3$R_burtoniae,
+     ylab = "Predicted",
+     xlab = "",
+     main = "R_burtoniae")
+abline(0,1)
+plot(pred[,2] ~ plots_3$R_comptonii,
+     xlab = "",
+     ylab = "",
+     main = "R_comptonii")
+abline(0,1)
+plot(pred[,3] ~ plots_3$D_diversifolium,
+     ylab = "Predicted",
+     xlab = "",
+     main = "D_diversifolium")
+abline(0,1)
+plot(pred[,4] ~ plots_3$A_delaetii,
+     xlab = "",
+     ylab = "",
+     main = "A_delaetii")
+abline(0,1)
+plot(pred[,5] ~ plots_3$A_fissum,
+     ylab = "Predicted",
+     xlab = "",
+     main = "A_fissum")
+abline(0,1)
+plot(pred[,6] ~ plots_3$A_framesii,
+     xlab = "",
+     ylab = "",
+     main = "A_framesii")
+abline(0,1)
+plot(pred[,7] ~ plots_3$C_spissum,
+     ylab = "Predicted",
+     xlab = "",
+     main = "C_spissum")
+abline(0,1)
+plot(pred[,8] ~ plots_3$C_staminodiosum,
+     xlab = "",
+     ylab = "",
+     main = "C_staminodiosum")
+abline(0,1)
+plot(pred[,9] ~ plots_3$Dicrocaulon_sp,
+     ylab = "Predicted",
+     xlab = "Observed",
+     main = "Dicrocaulon_sp")
+abline(0,1)
+plot(pred[,10] ~ plots_3$Oophytum_sp,
+     ylab = "Predicted",
+     xlab = "",
+     main = "Oophytum_sp")
+abline(0,1)
+```
+
+####Random selection
+
+```{r, echo = F, cache = T, warning=F, include=F}
+load("/Users/larawootton/Documents/Honours/Data/rplots_abn_20aug.rda")
+load("/Users/larawootton/Documents/Honours/Data/train_abn_scaled_20Aug.rda")
+
+test_abn <- fin_abn_df[-rplots_abn_20aug,]
+test_covar <- as.matrix(scale(test_abn[,11:25])) 
+
+
+newpredR <- predict.boral(train_abn_scaled_20Aug, 
+                         newX = test_covar, 
+                         predict.type = "marginal",
+                         est = "mean")
+```
+```{r, echo = F}
+pred <- exp(newpredR$linpred)
+
+par(mfrow = c(1,2))
+plot(pred[,1] ~ test_abn$R_burtoniae,
+     ylab = "Predicted",
+     xlab = "",
+     main = "R_burtoniae")
+abline(0,1)
+plot(pred[,2] ~ test_abn$R_comptonii,
+     xlab = "",
+     ylab = "",
+     main = "R_comptonii")
+abline(0,1)
+plot(pred[,3] ~ test_abn$D_diversifolium,
+     ylab = "Predicted",
+     xlab = "",
+     main = "D_diversifolium")
+abline(0,1)
+plot(pred[,4] ~ test_abn$A_delaetii,
+     xlab = "",
+     ylab = "",
+     main = "A_delaetii")
+abline(0,1)
+plot(pred[,5] ~ test_abn$A_fissum,
+     ylab = "Predicted",
+     xlab = "",
+     main = "A_fissum")
+abline(0,1)
+plot(pred[,6] ~ test_abn$A_framesii,
+     xlab = "",
+     ylab = "",
+     main = "A_framesii")
+abline(0,1)
+plot(pred[,7] ~ test_abn$C_spissum,
+     ylab = "Predicted",
+     xlab = "",
+     main = "C_spissum")
+abline(0,1)
+plot(pred[,8] ~ test_abn$C_staminodiosum,
+     xlab = "",
+     ylab = "",
+     main = "C_staminodiosum")
+abline(0,1)
+plot(pred[,9] ~ test_abn$Dicrocaulon_sp,
+     ylab = "Predicted",
+     xlab = "Observed",
+     main = "Dicrocaulon_sp")
+abline(0,1)
+plot(pred[,10] ~ test_abn$Oophytum_sp,
+     ylab = "Predicted",
+     xlab = "",
+     main = "Oophytum_sp")
+abline(0,1)
+
+```
+
+
+###Proportion variance poisson
+
+What is quite cool is that environmental variables seemed more important for abundance than they were for occurrence. This is the opposite of what I expected.
+
+```{r, echo=F, fig.width=6}
+
+var <- calc.varpart(abn_model_scaled_pois_20Aug)
+part <- data.frame(enviro = var$varpart.X, bio = var$varpart.lv)
+bardat <- data.frame(Species =rep(rownames(part),2), variance = c(as.vector(part[,1]), as.vector(part[,2])), type = c(rep("enviro",10), rep("lv",10)))
+
+ggplot(bardat, aes(x=Species, y=variance, fill = type)) +
+  geom_bar(stat="identity", position=position_dodge()) + 
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 45, 
+                                   colour = "black", 
+                                   size = 10,
+                                   vjust = 0.98, 
+                                   hjust = 1),
+        axis.title.x = element_blank(),
+        panel.grid = element_blank()) +
+  labs(y = "Proportion of variance")
+```
+
+###Correlation plots
+
+Correlation due to the environment on the left, due to biotic factors on the right.
+The environmental relationships are very similar to the occurrence models. 
+```{r, echo=F, fig.width=10}
+envcors <- get.enviro.cor(abn_model_scaled_pois_20Aug)
+rescors <- get.residual.cor(abn_model_scaled_pois_20Aug)
+
+par(mfrow = c(1,2))
+qgraph::qgraph(envcors$sig.cor, shape="circle", posCol="darkgreen", negCol="darkred", layout="groups", vsize=10)
+qgraph::qgraph(rescors$sig.correlaton, shape="circle", posCol="darkgreen", negCol="darkred", layout="groups", vsize=10)
+```
+
+
+###Caterpillar plots
+
+For the poisson model. Confidence intervals tend to be much tighter than for the occurrence models.
+
+```{r, echo=F, fig.width=10, fig.height=4}
+mod <- abn_model_scaled_pois_20Aug
+par(mfrow = c(1,5))
+
+for (i in 1:10) {
+  col.seq <-
+    rep("black", length(mod$hpdintervals$X.coefs[i, 1:15, "lower"]))
+  col.seq[mod$hpdintervals$X.coefs[i, 1:15, "lower"] < 0 &
+            mod$hpdintervals$X.coefs[i, 1:15, "upper"] > 0] <- "grey"
+  
+  plot(
+    x = c(mod$X.coefs.mean[i, 1:15]),
+    y = 1:15,
+    yaxt = "n",
+    ylab = "",
+    xlab = rownames(mod$X.coefs.mean)[i],
+    col = col.seq,
+    xlim = c(
+      min(mod$hpdintervals$X.coefs[, 1:15, "lower"]),
+      max(mod$hpdintervals$X.coefs[, 1:15, "upper"])
+    ),
+    pch = "x"
+  )
+  
+  axis(
+    2,
+    labels = colnames(mod$X.coefs.mean),
+    at = 1:15,
+    las = 2,
+    cex.axis = 0.75
+  )
+  
+  segments(
+    x0 = mod$hpdintervals$X.coefs[i, 1:15, "lower"],
+    y0 = 1:15,
+    x1 = mod$hpdintervals$X.coefs[i, 1:15, "upper"],
+    y1 = 1:15,
+    col = col.seq
+  )
+  abline(v = 0, lty = 3)
+  
+}
+```
+
