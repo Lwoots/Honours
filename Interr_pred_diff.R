@@ -8,7 +8,7 @@ rm(list = ls())
 setwd("/Users/larawootton/Documents/Honours/Data")
 
 if(!require(pacman)){install.packages("pacman", dependencies=TRUE); library(pacman)}
-p_load(ggplot2, MASS, dplyr)
+p_load(ggplot2, MASS, dplyr, boral)
 
 source("/Users/larawootton/Documents/Honours/Project_analysis/to_be_sourced.R")
 
@@ -75,6 +75,9 @@ sp_occ <- nb_sp[3:12] %>%
 dat <- left_join(sp_occ, my_soil_df[,c(1, 5)], by = "plot") %>% 
   filter(!is.na(type),!plot == "R40 ")
 
+all_dat <- left_join(sp_occ, my_soil_df %>% select(colnames(soil_dat[2:15]), plot), by = "plot") %>% 
+  na.omit()
+
 
 
 #Do the sites have different soil properties?
@@ -101,8 +104,78 @@ site_sums <- dat %>% group_by(site) %>% summarise(R_burtoniae = sum(R_burtoniae)
                                      Dicrocaulon_sp = sum(Dicrocaulon_sp),
                                      Oophytum_sp = sum(Oophytum_sp)
                                      ) 
-site_sums <- rbind(site_sums, tot = total)
+site_sums <- rbind(site_sums[,2:11], tot = total)
 
-sum_dat <- as.data.frame(t(site_sums[,2:11]))
+sum_dat <- as.data.frame(t(site_sums[,1:10]))
 colnames(sum_dat) <- c("Site 1", "Site 2", "Site 3", "Total")
 sum_dat
+
+
+#How deterministic are the species?
+
+#Practice loop
+
+example_mcmc_control <- list(n.burnin = 10, n.iteration = 1000, 
+                             n.thin = 1)
+aucs <- list()
+num <- 1
+repeat {
+  rplots <- sample(150, 100)
+  train <- all_dat[rplots, ]
+  test <-  all_dat[-rplots, ]
+  
+  sp <- as.matrix(train[, 1:10])
+  covar <- as.matrix(train[, 13:length(train)])
+  
+  mod <- boral(
+    sp,
+    covar,
+    num.lv = 3,
+    family = "binomial",
+    mcmc.control = example_mcmc_control,
+    save.model = T
+  )
+  
+  test_covar <-  as.matrix(test[,13:length(test)])
+  
+  newpred <- predict.boral(mod, 
+                           newX = test_covar, 
+                           predict.type = "marginal",
+                           est = "mean") 
+ 
+ pred_all <- ROCR::prediction(newpred$linpred, test[,1:10])
+ auc_info <- ROCR::performance(pred_all, "auc")
+  aucs[[num]] <- auc_info@y.values
+ num <- num + 1
+  if(num > 2) {
+    break
+  }
+}
+
+
+
+load("train_occ_scaled_19Aug.rda")
+newpred <- predict.boral(train_occ_scaled_19Aug, 
+                         newX = test_covar, 
+                         predict.type = "marginal",
+                         est = "mean")
+
+pred_all <- ROCR::prediction(newpred$linpred, test[,1:10])
+aucs <- ROCR::performance(pred_all, "auc")
+aucs <- ROCR::performance(pred_all, "auc")
+
+aucs@y.values
+ls <- list(unlist(aucs@y.values), unlist(aucs@y.values), c(8,9,40))
+
+ls[[2]]
+ls[1:3][3]
+t <- unlist(lapply(ls, "[[", 1))
+hist(t)
+
+rank(t)
+
+ls[[1]][[1]]
+
+
+roc()
+
