@@ -8,7 +8,7 @@ rm(list = ls())
 setwd("/Users/larawootton/Documents/Honours/Data")
 
 if(!require(pacman)){install.packages("pacman", dependencies=TRUE); library(pacman)}
-p_load(ggplot2, MASS, dplyr, boral)
+p_load(ggplot2, MASS, dplyr, boral, pROC)
 
 source("/Users/larawootton/Documents/Honours/Project_analysis/to_be_sourced.R")
 
@@ -111,28 +111,41 @@ colnames(sum_dat) <- c("Site 1", "Site 2", "Site 3", "Total")
 sum_dat
 
 
-#How deterministic are the species?
+#How deterministic are the species? ####
 
 #Practice loop
 
 example_mcmc_control <- list(n.burnin = 10, n.iteration = 1000, 
-                             n.thin = 1)
-aucs <- list()
+                             n.thin = 2)
+auc_burt <- list()
+auc_comp <- list()
+auc_div <- list()
+auc_del <- list()
+auc_fis <- list()
+auc_fram <- list()
+auc_spis <- list()
+auc_stam <- list()
+auc_dic <- list()
+auc_ooph <- list()
+
+
+
 num <- 1
 repeat {
+  set.seed(Sys.time())
   rplots <- sample(150, 100)
   train <- all_dat[rplots, ]
-  test <-  all_dat[-rplots, ]
+  test <-  all_dat[-c(rplots), ]
   
-  sp <- as.matrix(train[, 1:10])
-  covar <- as.matrix(train[, 13:length(train)])
+  sp <- as.matrix(train[,1:10])
+  covar <- as.matrix(train[,13:length(train)])
   
   mod <- boral(
     sp,
     covar,
     num.lv = 3,
     family = "binomial",
-    mcmc.control = example_mcmc_control,
+    #mcmc.control = example_mcmc_control,
     save.model = T
   )
   
@@ -143,26 +156,56 @@ repeat {
                            predict.type = "marginal",
                            est = "mean") 
  
- pred_all <- ROCR::prediction(newpred$linpred, test[,1:10])
- auc_info <- ROCR::performance(pred_all, "auc")
-  aucs[[num]] <- auc_info@y.values
- num <- num + 1
-  if(num > 2) {
+ auc_burt[[num]] <- pROC::roc(test$R_burtoniae, newpred$linpred[,1]) %>% pROC::auc()
+ auc_comp[[num]] <- pROC::roc(test$R_comptonii, newpred$linpred[,2]) %>% pROC::auc()
+ auc_div[[num]] <- pROC::roc(test$D_diversifolium, newpred$linpred[,3]) %>% pROC::auc()
+ auc_del[[num]] <- pROC::roc(test$A_delaetii, newpred$linpred[,4]) %>% pROC::auc()
+ auc_fis[[num]] <- pROC::roc(test$A_fissum, newpred$linpred[,5]) %>% pROC::auc()
+ auc_fram[[num]] <- pROC::roc(test$A_framesii, newpred$linpred[,6]) %>% pROC::auc()
+ auc_spis[[num]] <- pROC::roc(test$C_spissum, newpred$linpred[,7]) %>% pROC::auc()
+ auc_stam[[num]] <- pROC::roc(test$C_staminodiosum, newpred$linpred[,8]) %>% pROC::auc()
+ auc_dic[[num]] <- pROC::roc(test$Dicrocaulon_sp, newpred$linpred[,9]) %>% pROC::auc()
+ auc_ooph[[num]] <- pROC::roc(test$Oophytum_sp, newpred$linpred[,10]) %>% pROC::auc()
+
+  num <- num + 1
+  if(num > 4) {
     break
   }
 }
 
 
+bl <- train %>% summarise(R_burtoniae = sum(R_burtoniae),
+          R_comptonii = sum(R_comptonii),
+          D_diversifolium = sum(D_diversifolium),
+          A_delaetii = sum(A_delaetii),
+          A_fissum = sum(A_fissum),
+          A_framesii = sum(A_framesii),
+          C_spissum = sum(C_spissum),
+          C_staminodiosum = sum(C_staminodiosum),
+          Dicrocaulon_sp = sum(Dicrocaulon_sp),
+          Oophytum_sp = sum(Oophytum_sp))
+bt <- test %>% summarise(R_burtoniae = sum(R_burtoniae),
+                                   R_comptonii = sum(R_comptonii),
+                                   D_diversifolium = sum(D_diversifolium),
+                                   A_delaetii = sum(A_delaetii),
+                                   A_fissum = sum(A_fissum),
+                                   A_framesii = sum(A_framesii),
+                                   C_spissum = sum(C_spissum),
+                                   C_staminodiosum = sum(C_staminodiosum),
+                                   Dicrocaulon_sp = sum(Dicrocaulon_sp),
+                                   Oophytum_sp = sum(Oophytum_sp))
 
-load("train_occ_scaled_19Aug.rda")
-newpred <- predict.boral(train_occ_scaled_19Aug, 
-                         newX = test_covar, 
-                         predict.type = "marginal",
-                         est = "mean")
+hist(unlist(auc_comp))
 
-pred_all <- ROCR::prediction(newpred$linpred, test[,1:10])
-aucs <- ROCR::performance(pred_all, "auc")
-aucs <- ROCR::performance(pred_all, "auc")
+
+newpred$linpred[,1] %>% pROC::roc(test$R_comptonii, newpred$linpred[,2]) %>% pROC::auc()
+
+pROC::roc(test$R_comptonii, newpred$linpred[,2]) %>% pROC::auc()
+
+comp <- prediction(newpred$linpred[,2], test$R_comptonii) %>% performance("auc")
+
+
+
 
 aucs@y.values
 ls <- list(unlist(aucs@y.values), unlist(aucs@y.values), c(8,9,40))
