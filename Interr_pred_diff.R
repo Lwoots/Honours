@@ -168,10 +168,30 @@ repeat {
  auc_ooph[[num]] <- pROC::roc(test$Oophytum_sp, newpred$linpred[,10]) %>% pROC::auc()
 
   num <- num + 1
-  if(num > 4) {
+  if(num > 42) {
     break
   }
 }
+
+
+auc58_randplots_27Aug <- list(auc_burt,
+                              auc_comp,
+                              auc_div ,
+                              auc_del ,
+                              auc_fis ,
+                              auc_fram,
+                              auc_spis,
+                              auc_stam,
+                              auc_dic ,
+                              auc_ooph)
+
+save(auc58_randplots_27Aug, file = "/Users/larawootton/Documents/Honours/Data/auc58_randplots_27Aug.rda")
+load("auc58_randplots_27Aug.rda")
+
+
+length(auc_spis)
+
+
 
 
 bl <- train %>% summarise(R_burtoniae = sum(R_burtoniae),
@@ -195,7 +215,7 @@ bt <- test %>% summarise(R_burtoniae = sum(R_burtoniae),
                                    Dicrocaulon_sp = sum(Dicrocaulon_sp),
                                    Oophytum_sp = sum(Oophytum_sp))
 
-hist(unlist(auc_comp))
+hist(unlist(auc_burt))
 
 
 newpred$linpred[,1] %>% pROC::roc(test$R_comptonii, newpred$linpred[,2]) %>% pROC::auc()
