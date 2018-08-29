@@ -1,0 +1,368 @@
+---
+title: "Why different model interations predict differently"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+setwd("/Users/larawootton/Documents/Honours/Data")
+
+if(!require(pacman)){install.packages("pacman", dependencies=TRUE); library(pacman)}
+p_load(ggplot2, knitr, MASS, dplyr, boral, pROC)
+
+source("/Users/larawootton/Documents/Honours/Project_analysis/to_be_sourced.R")
+
+soil_dat <- my_soil_df %>% 
+  select(site, 
+         ph_kcl,
+         Na,
+         C_N_ratio,
+         Ca,
+         Q_cover,
+         elevation,
+         percent_over1,
+         percent_over2,
+         P,
+         N_perc,
+         aspect,
+         Clay,
+         corr_dN,
+         drainage,
+         slope,
+         type) %>% 
+  filter(!is.na(type)) %>% 
+  na.omit() %>% select(-type)
+
+soil_dat[,2:16] <- scale(soil_dat[,2:16])
+
+#Select study species (those that are present in ten or more plots) 
+nb_sp <- species_df %>% select(site,
+                               plot,
+                               ruschia_burtoniae,
+                               mesemb_1, 
+                               drosanthemum_diversifolium,
+                               a_delaetii,
+                               a_fissum,
+                               a_framesii,
+                               c_spissum,
+                               cephalophyllum_staminodiosum,
+                               dicrocaulon,
+                               oophytum) 
+
+
+names(nb_sp) <- c("site", 
+                  "plot",
+                  "R_burtoniae", 
+                  "R_comptonii", 
+                  "D_diversifolium",
+                  "A_delaetii",
+                  "A_fissum",
+                  "A_framesii",
+                  "C_spissum",
+                  "C_staminodiosum",
+                  "Dicrocaulon_sp",
+                  "Oophytum_sp")
+
+nb_sp[is.na(nb_sp)] <- 0 #replace NA with 0
+
+sp_occ <- nb_sp[3:12] %>% 
+  apply(2, function(x) ifelse(x == 0, 0, 1)) %>% 
+  as.data.frame() %>% 
+  mutate(site = nb_sp$site) %>% 
+  mutate(plot = nb_sp$plot) %>% 
+  na.omit()
+
+dat <- left_join(sp_occ, my_soil_df[,c(1, 5)], by = "plot") %>% 
+  filter(!is.na(type),!plot == "R40 ")
+type <- dat$type
+
+all_dat <- left_join(sp_occ, my_soil_df %>% select(colnames(soil_dat[2:15]), plot), by = "plot") %>% 
+  na.omit()
+
+my_dat <- my_soil_df %>% filter(!is.na(type)) %>% na.omit() #for spatial plots
+```
+
+Previous models showed that using two sites to predict onto a third were less accurate than using randomly selected plots from across all sites.
+
+There are four potential reasons for this.
+
+1) Each site has a unique soil composition. Therefore predicting onto a third site is extrapolating past the information contained in the model.
+
+2) Species may not be evenly distributed across the sites. Therefore models based on site data may not contain enough presences to create an accurate model.
+
+3) Spatial autocorrelation may affect the ability to predict. There should be a increasing gradient in prediction accuracy as plots are chosen to minimise autocorrelation.
+
+###Summary
+
+1) A linear discriminant analysis showed that the sites had a unique soil composition.
+
+2) Most species didn't occur evenly across sites.
+
+###Site soil composition
+
+A linear discriminant analysis based on soil variables showed that the plots clearly grouped by site. Site 1 had some overlap with sites 2 and 3, which makes sense as it was the middle plot.
+
+```{r, echo=F}
+lda_mod <- lda(site ~ ., data = soil_dat)
+cols <- c("black", "red", "green")[soil_dat$site]
+plot(lda_mod, col = cols)
+```
+
+###Evenness of species occurrence across sites
+
+Species tended to be widespread in only one or two sites. Possibly could test for evenness somehow. Chi squared?
+
+```{r, echo=F}
+total <- apply(X = dat[,1:10], MARGIN = 2, FUN = sum)
+
+site_sums <- dat %>% group_by(site) %>% summarise(R_burtoniae = sum(R_burtoniae),
+                                     R_comptonii = sum(R_comptonii),
+                                     D_diversifolium = sum(D_diversifolium),
+                                     A_delaetii = sum(A_delaetii),
+                                     A_fissum = sum(A_fissum),
+                                     A_framesii = sum(A_framesii),
+                                     C_spissum = sum(C_spissum),
+                                     C_staminodiosum = sum(C_staminodiosum),
+                                     Dicrocaulon_sp = sum(Dicrocaulon_sp),
+                                     Oophytum_sp = sum(Oophytum_sp)
+                                     ) 
+site_sums <- rbind(site_sums[,2:11], tot = total)
+
+sum_dat <- as.data.frame(t(site_sums[,1:10]))
+colnames(sum_dat) <- c("Site 1", "Site 2", "Site 3", "Total")
+kable(sum_dat, format = "html") %>% kableExtra::kable_styling(full_width = F)
+```
+
+###Spatial autocorrelation
+
+Created seven models with decreasing amount of spatial autocorrelation. Red represents plots used in the models, blue shows plots used as test data.
+
+
+```{r, echo=F, fig.width=10, fig.height=10}
+par(mfrow = c(2,2))
+plot(my_dat$lon, my_dat$lat, 
+     pch = 22, cex = 1.4, 
+     col = ifelse(my_dat$site == "site1" | my_dat$site=="site2", "red", "blue"),
+     main = "Model 1: Sites 1 and 2 predicting to 3",
+     ylab = "Lat",
+     xlab = "")
+
+plot(my_dat$lon, my_dat$lat, 
+     pch = 22, cex = 1.4, 
+     col = ifelse(my_dat$site == "site3" | my_dat$site=="site1", "red", "blue"),
+     main = "Model 2: Sites 1 and 3 predicting to 2",
+     ylab = "",
+     xlab = "")
+
+plot(my_dat$lon, my_dat$lat, 
+     pch = 22, cex = 1.4, 
+     col = ifelse(my_dat$site == "site3" | my_dat$site=="site2", "red", "blue"),
+     main = "Model 3: Sites 2 and 3 predicting to 1",
+     ylab = "Lat",
+     xlab = "")
+
+dat <- my_dat %>% group_by(site) %>% slice(1:33)
+rev_dat <- setdiff(my_dat, dat)
+
+plot(dat$lon, dat$lat,
+     pch = 22, cex = 1.4, 
+     col = "red",
+     main = "Model 4: Use two-thirds of a site to predict onto a third",
+     ylab = "",
+     xlab = "",
+     xlim = c(min(my_dat$lon), max(my_dat$lon)),
+     ylim = c(min(my_dat$lat), max(my_dat$lat)))
+points(rev_dat$lon, rev_dat$lat, 
+       col = "blue",
+       pch = 22, cex = 1.4)
+
+dat <- my_dat %>% group_by(site) %>% slice(c(1:15, 33:n()))
+rev_dat <- setdiff(my_dat, dat)
+
+plot(dat$lon, dat$lat,
+     pch = 22, cex = 1.4, 
+     col = "red",
+     main = "Model 5: Use outer thirds of site to predict onto inner third",
+     ylab = "Lat",
+     xlab = "")
+points(rev_dat$lon, rev_dat$lat, 
+       col = "blue",
+       pch = 22, cex = 1.4)
+
+plot(my_dat$lon, my_dat$lat, 
+     pch = 22, cex = 1.4, 
+     col = ifelse(my_dat$type == "grid", "red", "blue"),
+     main = "Model 6: Use grid plots to predict onto random plots",
+     ylab = "",
+     xlab = "Lon")
+
+set.seed(95)
+rplots <- sample(150, 100)
+dat <- my_dat[rplots,]
+rev_dat <- my_dat[-rplots,]
+plot(dat$lon, dat$lat,
+     pch = 22, cex = 1.4, 
+     col = "red",
+     main = "Model 7: Use randomly selected plots",
+     ylab = "Lat",
+     xlab = "Lon")
+points(rev_dat$lon, rev_dat$lat, 
+       col = "blue",
+       pch = 22, cex = 1.4)
+```
+
+AUCs 
+
+```{r, include=F, cache=T}
+#mod1
+load("/Users/larawootton/Documents/Honours/Data/plots12_19Aug.rda")
+test <- all_dat %>% filter(site == "site3")
+newpred1 <- predict.boral(plots12_19Aug, 
+                         newX = test[,13:26], 
+                         predict.type = "marginal",
+                         est = "mean")
+```
+
+```{r, echo=F}
+pred <- newpred1$linpred
+pred_all1 <- ROCR::prediction(pred[,c(1:5,7:10)], test[,c(1:5,7:10)])
+aucs1 <- ROCR::performance(pred_all1, "auc")
+au <- unlist(aucs1@y.values)
+Mod1 <- c(au[1:5], NA, au[6:9])
+```
+
+```{r, include=F, cache=T}
+#mod2
+load("/Users/larawootton/Documents/Honours/Data/plots13_1Aug.rda")
+test <- all_dat %>% filter(site == "site2")
+newpred2 <- predict.boral(plots13_19Aug, 
+                         newX = test[,13:26], 
+                         predict.type = "marginal",
+                         est = "mean")
+```
+
+```{r, echo=F}
+pred <- newpred2$linpred
+pred_all2 <- ROCR::prediction(pred[,c(1, 3:7,9:10)], test[,c(1, 3:7,9:10)])
+aucs2 <- ROCR::performance(pred_all2, "auc")
+au <- unlist(aucs2@y.values)
+Mod2 <- c(au[1], NA, au[2:6], NA, au[7:8])
+```
+
+
+```{r, include=F, cache=T}
+#mod3
+load("/Users/larawootton/Documents/Honours/Data/plots23_19Aug.rda")
+test <- all_dat %>% filter(site == "site1")
+newpred3 <- predict.boral(plots23_19Aug, 
+                         newX = test[,13:26], 
+                         predict.type = "marginal",
+                         est = "mean")
+```
+
+```{r, echo=F}
+pred <- newpred3$linpred
+pred_all3 <- ROCR::prediction(pred, test[,1:10])
+aucs3 <- ROCR::performance(pred_all3, "auc")
+Mod3 <- unlist(aucs3@y.values)
+
+```
+
+```{r, include=F, cache=T}
+#mod4
+load("/Users/larawootton/Documents/Honours/Data/thirds_model.rda")
+thirds_dat <- all_dat %>% group_by(site) %>% slice(1:33)
+test <- setdiff(all_dat, thirds_dat)
+
+newpred4 <- predict.boral(thirds_model, 
+                         newX = test[,13:26], 
+                         predict.type = "marginal",
+                         est = "mean")
+```
+
+```{r, echo=F}
+pred <- newpred4$linpred
+pred_all4 <- ROCR::prediction(pred, test[,1:10])
+aucs4 <- ROCR::performance(pred_all4, "auc")
+Mod4 <- unlist(aucs4@y.values)
+
+```
+
+```{r, include=F, cache=T}
+#mod5
+load("/Users/larawootton/Documents/Honours/Data/outer_thirds_model.rda")
+outer_dat <- all_dat %>% group_by(site) %>% slice(c(1:15, 33:n()))
+test <- setdiff(all_dat, outer_dat)
+
+newpred5 <- predict.boral(outer_thirds_model, 
+                         newX = test[,13:26], 
+                         predict.type = "marginal",
+                         est = "mean")
+```
+
+```{r, echo=F}
+pred <- newpred5$linpred
+pred_all5 <- ROCR::prediction(pred[,c(1:5,7:10)], test[,c(1:5,7:10)])
+aucs5 <- ROCR::performance(pred_all5, "auc")
+au <- unlist(aucs5@y.values)
+Mod5 <- c(au[1:5], NA, au[6:9])
+```
+
+```{r, include=F, cache=T}
+#mod6
+load("/Users/larawootton/Documents/Honours/Data/grid_rand_occ_27Aug.rda")
+typedat <- cbind(all_dat, type = type)
+grid <- typedat %>% filter(type == "grid") %>% select(-type)
+test <- typedat %>% filter(type == "random") %>% select(-type)
+
+newpred6 <- predict.boral(grid_rand_occ_27Aug, 
+                         newX = test[,13:26], 
+                         predict.type = "marginal",
+                         est = "mean")
+```
+
+```{r, echo=F}
+pred <- newpred6$linpred
+pred_all6 <- ROCR::prediction(pred, test[,1:10])
+aucs6 <- ROCR::performance(pred_all6, "auc")
+Mod6 <- unlist(aucs6@y.values)
+
+```
+
+```{r, include=F, cache=T}
+#mod7
+load( "/Users/larawootton/Documents/Honours/Data/rand_mod_27Aug.rda")
+set.seed(95)
+rplots <- sample(150, 100)
+
+train <- all_dat[c(rplots),]
+test <- setdiff(all_dat, train)
+newpred7 <- predict.boral(rand_mod_27Aug, 
+                         newX = test[,13:26], 
+                         predict.type = "marginal",
+                         est = "mean")
+```
+
+```{r, echo=F}
+pred <- newpred7$linpred
+pred_all7 <- ROCR::prediction(pred, test[,1:10])
+aucs7 <- ROCR::performance(pred_all7, "auc")
+Mod7 <- unlist(aucs7@y.values)
+
+```
+
+```{r, echo=F}
+
+table <- data.frame(Species = colnames(all_dat[,1:10]), 
+                       Mod1, 
+                       Mod2, 
+                       Mod3, 
+                       Mod4, 
+                       Mod5,
+                       Mod6,
+                       Mod7) 
+table[,2:8] <- round(table[,2:8], 2)
+kable(table) %>% kableExtra::kable_styling(full_width = F)
+
+```
