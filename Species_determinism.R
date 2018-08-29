@@ -100,12 +100,32 @@ registerDoParallel(cl)
 num = 1
 
 repeat{
+  set.seed(Sys.time())
   rplots <- sample(150, 100)
   train <- all_dat[rplots, ]
   test <-  all_dat[-c(rplots), ]
   
   #Shuffle species, keeping row and column sums equal to original data.
   rsp <- permatswap(train[,1:10], times = 1, burnin = 5, fixedmar = "both", mtype = "prab")
+  
+  #Record the number of species used in each plot
+  stoc_sp_num[[num]] <- train %>% summarise(R_burtoniae = sum(R_burtoniae),
+                                             R_comptonii = sum(R_comptonii),
+                                             D_diversifolium = sum(D_diversifolium),
+                                             A_delaetii = sum(A_delaetii),
+                                             A_fissum = sum(A_fissum),
+                                             A_framesii = sum(A_framesii),
+                                             C_spissum = sum(C_spissum),
+                                             C_staminodiosum = sum(C_staminodiosum),
+                                             Dicrocaulon_sp = sum(Dicrocaulon_sp),
+                                             Oophytum_sp = sum(Oophytum_sp)
+  )
+  
+  #Skip loop interation
+  
+  if(stoc_sp_num[[num]][[8]] == 10) {
+    next
+  }
   
   sp <- as.data.frame(rsp$perm)
   covar <- as.matrix(train[,13:length(train)])
@@ -115,7 +135,7 @@ repeat{
     covar,
     num.lv = 3,
     family = "binomial",
-    mcmc.control = example_mcmc_control,
+    #mcmc.control = example_mcmc_control,
     save.model = T
   )
   
@@ -137,23 +157,56 @@ repeat{
   stoc_auc_dic[[num]] <- pROC::roc(test$Dicrocaulon_sp, newpred$linpred[,9]) %>% pROC::auc()
   stoc_auc_ooph[[num]] <- pROC::roc(test$Oophytum_sp, newpred$linpred[,10]) %>% pROC::auc()
   
-  #Record the number of species used in each plot
-  stoc_sp_num[[num]] <- all_dat %>% slice(rplots) %>% summarise(R_burtoniae = sum(R_burtoniae),
-                                                           R_comptonii = sum(R_comptonii),
-                                                           D_diversifolium = sum(D_diversifolium),
-                                                           A_delaetii = sum(A_delaetii),
-                                                           A_fissum = sum(A_fissum),
-                                                           A_framesii = sum(A_framesii),
-                                                           C_spissum = sum(C_spissum),
-                                                           C_staminodiosum = sum(C_staminodiosum),
-                                                           Dicrocaulon_sp = sum(Dicrocaulon_sp),
-                                                           Oophytum_sp = sum(Oophytum_sp)
-  ) 
+   
   num <- num + 1
-  if(num > 2) {
+  if(num > 10) {
     break
   }
 }
+
+stoc_run1_n2_28Aug <- list(stoc_auc_burt,
+                           stoc_auc_comp,
+                           stoc_auc_div ,
+                           stoc_auc_del ,
+                           stoc_auc_fis ,
+                           stoc_auc_fram,
+                           stoc_auc_spis,
+                           stoc_auc_stam,
+                           stoc_auc_dic ,
+                           stoc_auc_ooph)
+
+stoc_run2_n10_28Aug <- list(stoc_auc_burt,
+                           stoc_auc_comp,
+                           stoc_auc_div ,
+                           stoc_auc_del ,
+                           stoc_auc_fis ,
+                           stoc_auc_fram,
+                           stoc_auc_spis,
+                           stoc_auc_stam,
+                           stoc_auc_dic ,
+                           stoc_auc_ooph)
+
+save(stoc_run1_n2_28Aug, 
+     file = "/Users/larawootton/Documents/Honours/Data/stoc_run1_n2_28Aug.rda")
+save(stoc_run2_n10_28Aug, 
+     file = "/Users/larawootton/Documents/Honours/Data/stoc_run2_n10_28Aug.rda")
+
+sp_stoc_run1_n2_28Aug <- sp_num
+save(sp_stoc_run1_n2_28Aug, 
+     file = "/Users/larawootton/Documents/Honours/Data/sp_stoc_run1_n2_28Aug.rda")
+
+
+stoc_R_burt <- c(unlist(stoc_run1_n2_28Aug[[1]]), unlist(stoc_run2_n10_28Aug[[1]]))
+stoc_R_comp <- c(unlist(stoc_run1_n2_28Aug[[2]]),unlist(stoc_run2_n10_28Aug[[2]]))
+stoc_D_div <- c(unlist(stoc_run1_n2_28Aug[[3]]),unlist(stoc_run2_n10_28Aug[[3]]))
+stoc_A_del <- c(unlist(stoc_run1_n2_28Aug[[4]]),unlist(stoc_run2_n10_28Aug[[4]]))
+stoc_A_fis <- c(unlist(stoc_run1_n2_28Aug[[5]]),unlist(stoc_run2_n10_28Aug[[5]]))
+stoc_A_fra <- c(unlist(stoc_run1_n2_28Aug[[6]]),unlist(stoc_run2_n10_28Aug[[6]]))
+stoc_C_spis <- c(unlist(stoc_run1_n2_28Aug[[7]]),unlist(stoc_run2_n10_28Aug[[7]]))
+stoc_C_sta <- c(unlist(stoc_run1_n2_28Aug[[8]]),unlist(stoc_run2_n10_28Aug[[8]]))
+stoc_Dicro <- c(unlist(stoc_run1_n2_28Aug[[9]]),unlist(stoc_run2_n10_28Aug[[9]]))
+stoc_Ooph <- c(unlist(stoc_run1_n2_28Aug[[10]]),unlist(stoc_run2_n10_28Aug[[10]]))
+
 
 
 
@@ -190,6 +243,26 @@ repeat {
   train <- all_dat[rplots, ]
   test <-  all_dat[-c(rplots), ]
   
+  #Record the number of species used in each plot
+  sp_num[[num]] <- train  %>% summarise(R_burtoniae = sum(R_burtoniae),
+                                        R_comptonii = sum(R_comptonii),
+                                        D_diversifolium = sum(D_diversifolium),
+                                        A_delaetii = sum(A_delaetii),
+                                        A_fissum = sum(A_fissum),
+                                        A_framesii = sum(A_framesii),
+                                        C_spissum = sum(C_spissum),
+                                        C_staminodiosum = sum(C_staminodiosum),
+                                        Dicrocaulon_sp = sum(Dicrocaulon_sp),
+                                        Oophytum_sp = sum(Oophytum_sp)
+  ) 
+  
+  #Skip loop interation
+  
+  if(sp_num[[num]][[8]] == 10) {
+    next
+  }
+  
+  
   sp <- as.matrix(train[,1:10])
   covar <- as.matrix(train[,13:length(train)])
   
@@ -223,29 +296,77 @@ repeat {
   auc_dic[[num]] <- pROC::roc(test$Dicrocaulon_sp, newpred$linpred[,9]) %>% pROC::auc()
   auc_ooph[[num]] <- pROC::roc(test$Oophytum_sp, newpred$linpred[,10]) %>% pROC::auc()
   
-  #Record the number of species used in each plot
-  sp_num[[num]] <- all_dat %>% slice(rplots) %>% summarise(R_burtoniae = sum(R_burtoniae),
-                                                       R_comptonii = sum(R_comptonii),
-                                                       D_diversifolium = sum(D_diversifolium),
-                                                       A_delaetii = sum(A_delaetii),
-                                                       A_fissum = sum(A_fissum),
-                                                       A_framesii = sum(A_framesii),
-                                                       C_spissum = sum(C_spissum),
-                                                       C_staminodiosum = sum(C_staminodiosum),
-                                                       Dicrocaulon_sp = sum(Dicrocaulon_sp),
-                                                       Oophytum_sp = sum(Oophytum_sp)
-  ) 
+ 
   
   num <- num + 1
-  if(num > 2) {
+  if(num > 15) {
     break
   }
 }
+
 
 #Stop parallel
 stopCluster(cl)
 registerDoSEQ()
 
+##auc_scale32_randplots_28Aug <- list(auc_burt,
+#                              auc_comp,
+#                              auc_div ,
+#                              auc_del ,
+#                              auc_fis ,
+#                              auc_fram,
+#                              auc_spis,
+#                              auc_stam,
+#                              auc_dic ,
+#                              auc_ooph)
+#save(auc_scale32_randplots_28Aug, 
+#     file = "/Users/larawootton/Documents/Honours/Data/auc_scale23_randplots_28Aug.rda")
+save(auc_scale10_run1_28Aug, 
+         file = "/Users/larawootton/Documents/Honours/Data/auc_scale10_run1_28Aug.rda")
+save(sp_num_scale10_run1_28Aug, 
+     file = "/Users/larawootton/Documents/Honours/Data/sp_num_scale10_run1_28Aug.rda")
+
+auc_scale10_run1_28Aug<- list(auc_burt,
+                              auc_comp,
+                              auc_div ,
+                              auc_del ,
+                              auc_fis ,
+                              auc_fram,
+                              auc_spis,
+                              auc_stam,
+                              auc_dic ,
+                              auc_ooph)
+sp_num_scale10_run1_28Aug <- sp_num
+
+
+R_burt <- c(unlist(auc_scale10_run1_28Aug[[1]]))
+R_comp <- c(unlist(auc_scale10_run1_28Aug[[2]]))
+D_div <- c(unlist(auc_scale10_run1_28Aug[[3]]))
+A_del <- c(unlist(auc_scale10_run1_28Aug[[4]]))
+A_fis <- c(unlist(auc_scale10_run1_28Aug[[5]]))
+A_fra <- c(unlist(auc_scale10_run1_28Aug[[6]]))
+C_spis <- c(unlist(auc_scale10_run1_28Aug[[7]]))
+C_sta <- c(unlist(auc_scale10_run1_28Aug[[8]]))
+Dicro <- c(unlist(auc_scale10_run1_28Aug[[9]]))
+Ooph <- c(unlist(auc_scale10_run1_28Aug[[10]]))
+
+sp_R_burt <- c(unlist(sp_num_scale10_run1_28Aug[[1]]))
+sp_R_comp <- c(unlist(sp_num_scale10_run1_28Aug[[2]]))
+sp_D_div <- c(unlist(sp_num_scale10_run1_28Aug[[3]]))
+sp_A_del <- c(unlist(sp_num_scale10_run1_28Aug[[4]]))
+sp_A_fis <- c(unlist(sp_num_scale10_run1_28Aug[[5]]))
+sp_A_fra <- c(unlist(sp_num_scale10_run1_28Aug[[6]]))
+sp_C_spis <- c(unlist(sp_num_scale10_run1_28Aug[[7]]))
+sp_C_sta <- c(unlist(sp_num_scale10_run1_28Aug[[8]]))
+sp_Dicro <- c(unlist(sp_num_scale10_run1_28Aug[[9]]))
+sp_Ooph <- c(unlist(sp_num_scale10_run1_28Aug[[10]]))
+
+plot(R_burt ~ sp_R_burt)
+plot(R_comp ~ sp_R_comp)
+plot(Ooph ~ sp_Ooph)
+
+
+boxplot(R_burt, R_comp, D_div, A_del, A_fis, A_fra, C_spis, C_sta, Dicro, Ooph)
 
 #Outlying means index (OMI) ####
 
