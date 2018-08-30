@@ -5,7 +5,7 @@ rm(list = ls())
 setwd("/Users/larawootton/Documents/Honours/Data")
 
 if(!require(pacman)){install.packages("pacman", dependencies=TRUE); library(pacman)}
-p_load(ggplot2, adehabitatHS, MASS, dplyr, adegraphics, boral, foreach, doParallel, TeachingDemos, vegan)
+p_load(ggplot2, adehabitatHS, MASS, dplyr, boral, foreach, doParallel, TeachingDemos, vegan, rlist)
 
 #Setup ####
 source("/Users/larawootton/Documents/Honours/Project_analysis/to_be_sourced.R")
@@ -207,7 +207,15 @@ stoc_C_sta <- c(unlist(stoc_run1_n2_28Aug[[8]]),unlist(stoc_run2_n10_28Aug[[8]])
 stoc_Dicro <- c(unlist(stoc_run1_n2_28Aug[[9]]),unlist(stoc_run2_n10_28Aug[[9]]))
 stoc_Ooph <- c(unlist(stoc_run1_n2_28Aug[[10]]),unlist(stoc_run2_n10_28Aug[[10]]))
 
+boxplot(stoc_R_burt, stoc_R_comp, stoc_D_div, stoc_A_del, stoc_A_fis, stoc_A_fra, stoc_C_spis, stoc_C_sta, stoc_Dicro, stoc_Ooph)
 
+points(c(mean(stoc_R_burt), mean(stoc_R_comp), 
+         mean(stoc_D_div), mean(stoc_A_del), 
+         mean(stoc_A_fis), mean(stoc_A_fra), 
+         mean(stoc_C_spis), mean(stoc_C_sta, na.rm = T),
+         mean(stoc_Dicro), mean(stoc_Ooph)),
+       pch = 19,
+       col = "red")
 
 
 
@@ -243,6 +251,12 @@ repeat {
   train <- all_dat[rplots, ]
   test <-  all_dat[-c(rplots), ]
   
+  #Skip loop interation
+  
+  if(train %>% summarise(C_staminodiosum = sum(C_staminodiosum)) == 10) {
+    next
+  }
+  
   #Record the number of species used in each plot
   sp_num[[num]] <- train  %>% summarise(R_burtoniae = sum(R_burtoniae),
                                         R_comptonii = sum(R_comptonii),
@@ -256,11 +270,7 @@ repeat {
                                         Oophytum_sp = sum(Oophytum_sp)
   ) 
   
-  #Skip loop interation
-  
-  if(sp_num[[num]][[8]] == 10) {
-    next
-  }
+
   
   
   sp <- as.matrix(train[,1:10])
@@ -299,7 +309,7 @@ repeat {
  
   
   num <- num + 1
-  if(num > 15) {
+  if(num > 40) {
     break
   }
 }
@@ -321,12 +331,25 @@ registerDoSEQ()
 #                              auc_ooph)
 #save(auc_scale32_randplots_28Aug, 
 #     file = "/Users/larawootton/Documents/Honours/Data/auc_scale23_randplots_28Aug.rda")
-save(auc_scale10_run1_28Aug, 
+#save(auc_scale10_run1_28Aug, 
          file = "/Users/larawootton/Documents/Honours/Data/auc_scale10_run1_28Aug.rda")
-save(sp_num_scale10_run1_28Aug, 
+#save(auc_scale10_run2_28Aug, 
+     file = "/Users/larawootton/Documents/Honours/Data/auc_scale10_run2_28Aug.rda")
+save(auc_scale24_run3_28Aug, file =  "/Users/larawootton/Documents/Honours/Data/auc_scale24_run3_28Aug.rda")
+#save(sp_num_scale10_run1_28Aug, 
      file = "/Users/larawootton/Documents/Honours/Data/sp_num_scale10_run1_28Aug.rda")
+#save(sp_num_scale10_run2_28Aug, 
+     file = "/Users/larawootton/Documents/Honours/Data/sp_num_scale10_run2_28Aug.rda")
+save(sp_num_scale24_run3_28Aug, file = "/Users/larawootton/Documents/Honours/Data/sp_num_scale24_run3_28Aug.rda")
+load("/Users/larawootton/Documents/Honours/Data/auc_scale10_run1_28Aug.rda")
+load("/Users/larawootton/Documents/Honours/Data/auc_scale10_run2_28Aug.rda")
+load("/Users/larawootton/Documents/Honours/Data/auc_scale24_run3_28Aug.rda")
 
-auc_scale10_run1_28Aug<- list(auc_burt,
+load("/Users/larawootton/Documents/Honours/Data/sp_num_scale10_run1_28Aug.rda")
+load("/Users/larawootton/Documents/Honours/Data/sp_num_scale10_run2_28Aug.rda")
+load("/Users/larawootton/Documents/Honours/Data/sp_num_scale24_run3_28Aug.rda")
+
+#auc_scale10_run1_28Aug<- list(auc_burt,
                               auc_comp,
                               auc_div ,
                               auc_del ,
@@ -336,37 +359,161 @@ auc_scale10_run1_28Aug<- list(auc_burt,
                               auc_stam,
                               auc_dic ,
                               auc_ooph)
-sp_num_scale10_run1_28Aug <- sp_num
+#auc_scale10_run2_28Aug<- list(auc_burt,
+                              auc_comp,
+                              auc_div ,
+                              auc_del ,
+                              auc_fis ,
+                              auc_fram,
+                              auc_spis,
+                              auc_stam,
+                              auc_dic ,
+                              auc_ooph)
+auc_scale24_run3_28Aug<- list(auc_burt,
+                              auc_comp,
+                              auc_div ,
+                              auc_del ,
+                              auc_fis ,
+                              auc_fram,
+                              auc_spis,
+                              auc_stam,
+                              auc_dic ,
+                              auc_ooph)
+#sp_num_scale10_run1_28Aug <- sp_num
+#sp_num_scale10_run2_28Aug <- sp_num
+sp_num_scale24_run3_28Aug <- sp_num
 
 
-R_burt <- c(unlist(auc_scale10_run1_28Aug[[1]]))
-R_comp <- c(unlist(auc_scale10_run1_28Aug[[2]]))
-D_div <- c(unlist(auc_scale10_run1_28Aug[[3]]))
-A_del <- c(unlist(auc_scale10_run1_28Aug[[4]]))
-A_fis <- c(unlist(auc_scale10_run1_28Aug[[5]]))
-A_fra <- c(unlist(auc_scale10_run1_28Aug[[6]]))
-C_spis <- c(unlist(auc_scale10_run1_28Aug[[7]]))
-C_sta <- c(unlist(auc_scale10_run1_28Aug[[8]]))
-Dicro <- c(unlist(auc_scale10_run1_28Aug[[9]]))
-Ooph <- c(unlist(auc_scale10_run1_28Aug[[10]]))
+R_burt <- c(unlist(auc_scale10_run1_28Aug[[1]]), unlist(auc_scale10_run2_28Aug[[1]]), unlist(auc_scale24_run3_28Aug[[1]]))
+R_comp <- c(unlist(auc_scale10_run1_28Aug[[2]]), unlist(auc_scale10_run2_28Aug[[2]]), unlist(auc_scale24_run3_28Aug[[2]]))
+D_div <-  c(unlist(auc_scale10_run1_28Aug[[3]]), unlist(auc_scale10_run2_28Aug[[3]]), unlist(auc_scale24_run3_28Aug[[3]]))
+A_del <-  c(unlist(auc_scale10_run1_28Aug[[4]]), unlist(auc_scale10_run2_28Aug[[4]]), unlist(auc_scale24_run3_28Aug[[4]]))
+A_fis <-  c(unlist(auc_scale10_run1_28Aug[[5]]), unlist(auc_scale10_run2_28Aug[[5]]), unlist(auc_scale24_run3_28Aug[[5]]))
+A_fra <-  c(unlist(auc_scale10_run1_28Aug[[6]]), unlist(auc_scale10_run2_28Aug[[6]]), unlist(auc_scale24_run3_28Aug[[6]]))
+C_spis <- c(unlist(auc_scale10_run1_28Aug[[7]]), unlist(auc_scale10_run2_28Aug[[7]]), unlist(auc_scale24_run3_28Aug[[7]]))
+C_sta <-  c(unlist(auc_scale10_run1_28Aug[[8]]), unlist(auc_scale10_run2_28Aug[[8]]), unlist(auc_scale24_run3_28Aug[[8]]))
+Dicro <-  c(unlist(auc_scale10_run1_28Aug[[9]]), unlist(auc_scale10_run2_28Aug[[9]]), unlist(auc_scale24_run3_28Aug[[9]]))
+Ooph <-   c(unlist(auc_scale10_run1_28Aug[[10]]),unlist(auc_scale10_run2_28Aug[[10]]), unlist(auc_scale24_run3_28Aug[[10]]))
 
-sp_R_burt <- c(unlist(sp_num_scale10_run1_28Aug[[1]]))
-sp_R_comp <- c(unlist(sp_num_scale10_run1_28Aug[[2]]))
-sp_D_div <- c(unlist(sp_num_scale10_run1_28Aug[[3]]))
-sp_A_del <- c(unlist(sp_num_scale10_run1_28Aug[[4]]))
-sp_A_fis <- c(unlist(sp_num_scale10_run1_28Aug[[5]]))
-sp_A_fra <- c(unlist(sp_num_scale10_run1_28Aug[[6]]))
-sp_C_spis <- c(unlist(sp_num_scale10_run1_28Aug[[7]]))
-sp_C_sta <- c(unlist(sp_num_scale10_run1_28Aug[[8]]))
-sp_Dicro <- c(unlist(sp_num_scale10_run1_28Aug[[9]]))
-sp_Ooph <- c(unlist(sp_num_scale10_run1_28Aug[[10]]))
+sp_R_burt <- c(unlist(list.select(sp_num_scale10_run1_28Aug, R_burtoniae)),
+               unlist(list.select(sp_num_scale10_run2_28Aug[1:10], R_burtoniae)),unlist(list.select(sp_num_scale24_run3_28Aug, R_burtoniae)))
+sp_R_comp <- c(unlist(list.select(sp_num_scale10_run1_28Aug, R_comptonii)),
+               unlist(list.select(sp_num_scale10_run2_28Aug[1:10], R_comptonii)),unlist(list.select(sp_num_scale24_run3_28Aug, R_comptonii)))
+sp_D_div <-  c(unlist(list.select(sp_num_scale10_run1_28Aug, D_diversifolium)),
+               unlist(list.select(sp_num_scale10_run2_28Aug[1:10], D_diversifolium)),unlist(list.select(sp_num_scale24_run3_28Aug, D_diversifolium)))
+sp_A_del <-  c(unlist(list.select(sp_num_scale10_run1_28Aug, A_delaetii)),
+               unlist(list.select(sp_num_scale10_run2_28Aug[1:10], A_delaetii)),unlist(list.select(sp_num_scale24_run3_28Aug, A_delaetii)))
+sp_A_fis <-  c(unlist(list.select(sp_num_scale10_run1_28Aug, A_fissum)),
+               unlist(list.select(sp_num_scale10_run2_28Aug[1:10], A_fissum)),unlist(list.select(sp_num_scale24_run3_28Aug[1:23], A_fissum)))
+sp_A_fra <-  c(unlist(list.select(sp_num_scale10_run1_28Aug, A_framesii)),
+              unlist(list.select(sp_num_scale10_run2_28Aug[1:10], A_framesii)),unlist(list.select(sp_num_scale24_run3_28Aug, A_framesii)))
+sp_C_spis <- c(unlist(list.select(sp_num_scale10_run1_28Aug, C_spissum)),
+               unlist(list.select(sp_num_scale10_run2_28Aug[1:10], C_spissum)),unlist(list.select(sp_num_scale24_run3_28Aug, C_spissum)))
+sp_C_sta <-  c(unlist(list.select(sp_num_scale10_run1_28Aug, C_staminodiosum)),
+               unlist(list.select(sp_num_scale10_run2_28Aug[1:10], C_staminodiosum)),unlist(list.select(sp_num_scale24_run3_28Aug, C_staminodiosum)))
+sp_Dicro <-  c(unlist(list.select(sp_num_scale10_run1_28Aug, Dicrocaulon_sp)),
+               unlist(list.select(sp_num_scale10_run2_28Aug[1:10], Dicrocaulon_sp)),unlist(list.select(sp_num_scale24_run3_28Aug, Dicrocaulon_sp)))
+sp_Ooph <-   c(unlist(list.select(sp_num_scale10_run1_28Aug, Oophytum_sp)),
+               unlist(list.select(sp_num_scale10_run2_28Aug[1:10], Oophytum_sp)),unlist(list.select(sp_num_scale24_run3_28Aug,  Oophytum_sp)))
 
-plot(R_burt ~ sp_R_burt)
-plot(R_comp ~ sp_R_comp)
-plot(Ooph ~ sp_Ooph)
+plot(R_burt ~ sp_R_burt,
+     xlab = "R. burtoniae sample size",
+     ylab = "AUC",
+     pch = 19)
+modb <- lm(R_burt ~ sp_R_burt)
+summary(modb)
+abline(modb)
+
+plot(R_comp ~ sp_R_comp,
+     xlab = "R. comptonii sample size",
+     ylab = "AUC",
+     pch = 19)
+
+modrc <- lm(R_comp ~ sp_R_comp)
+summary(modrc)
+
+
+plot(D_div ~ sp_D_div,
+     xlab = "D. diversifolium sample size",
+     ylab = "AUC",
+     pch = 19)
+modd <- lm(D_div ~ sp_D_div)
+summary(modd)
+
+plot(A_del ~ sp_A_del,
+     xlab = "A. delaetii sample size",
+     ylab = "AUC",
+     pch = 19)
+modad <- lm(A_del ~ sp_A_del)
+summary(modad)
+
+
+plot(A_fis ~ sp_A_fis,
+     xlab = "A. fissum sample size",
+     ylab = "AUC",
+     pch = 19)
+modaf <- lm(A_fis ~ sp_A_fis)
+summary(modaf)
+
+plot(A_fra ~ sp_A_fra,
+     xlab = "A. framesii sample size",
+     ylab = "AUC",
+     pch = 19)
+moda <- lm(A_fra ~ sp_A_fra)
+summary(moda)
+abline(moda)
+
+
+plot(C_spis ~ sp_C_spis,
+     xlab = "C. spissum sample size",
+     ylab = "AUC",
+     pch = 19)
+modc <- lm(C_spis ~ sp_C_spis)
+summary(modc)
+
+plot(C_sta ~ sp_C_sta,
+     xlab = "C. staminodiosum sample size",
+     ylab = "AUC",
+     pch = 19)
+modcs <- lm(C_sta ~ sp_C_sta)
+summary(modcs)
+
+plot(Dicro ~ sp_Dicro,
+     xlab = "Dicrocaulon sample size",
+     ylab = "AUC",
+     pch = 19)
+moddi <- lm(Dicro ~ sp_Dicro)
+summary(moddi)
+
+plot(Ooph ~ sp_Ooph,
+     xlab = "Oophytum sample size",
+     ylab = "AUC",
+     pch = 19)
+modo <- lm(Ooph ~ sp_Ooph)
+summary(modo)
+
 
 
 boxplot(R_burt, R_comp, D_div, A_del, A_fis, A_fra, C_spis, C_sta, Dicro, Ooph)
+points(c(mean(R_burt), mean(R_comp), 
+       mean(D_div), mean(A_del), 
+       mean(A_fis), mean(A_fra), 
+       mean(C_spis), mean(C_sta),
+       mean(Dicro), mean(Ooph)),
+       pch = 19,
+       col = "red")
+
+boxplot(R_burt, stoc_R_burt, 
+        R_comp, stoc_R_comp,
+        D_div, stoc_D_div,
+        A_del, stoc_A_del,
+        A_fis, stoc_A_fis,
+        A_fra, stoc_A_fra,
+        C_spis, stoc_C_spis,
+        C_sta, stoc_C_sta,
+        Dicro, stoc_Dicro,
+        Ooph, stoc_Ooph,
+        col = c("white", "grey"))
 
 #Outlying means index (OMI) ####
 
@@ -387,7 +534,7 @@ scatter(pca_soil)
 #Correlation between each variable and the axes
 pca_soil$co
 
-nic <- canomi(pca, all_dat[,1:10], scannf=FALSE)
+nic <- canomi(pca_soil, all_dat[,1:10], scannf=FALSE)
 nic
 plot(nic)
 
@@ -399,13 +546,9 @@ plot(omi)
 100 * omi$eig/sum(omi$eig)
 
 
-par(mfrow=c(1,2))
-sco.distri(omi$ls[,1],all_dat[,1:10],clab=0.7, grid = F)
+par(mfrow=c(1,1))
+sco.distri(omi$ls[,1],all_dat[,1:10],clab=0.7)
 sco.distri(omi$ls[,2],all_dat[,1:10],clab=0.7)
-
-
-omi$l1
-
 
 
 s.corcircle(omi$as, 1, 2, sub = "Axis", csub = 2, 
@@ -415,17 +558,9 @@ s.arrow(omi$c1, 1, 2, sub = "Variables", csub = 2,
 scatterutil.eigen(omi$eig, wsel = c(1, 2))
 s.label(omi$ls, 1, 2, clabel = 0, cpoint = 2, sub = "Samples and Species", 
         csub = 2)
-
+s.label(omi$li, 1, 2, clabel = 1.5, add.plot = TRUE)
 s.label(omi$ls, 1, 2, clabel = 1.25, sub = "Samples", 
         csub = 2)
-ade4::s.distri(omi$ls, eval.parent(as.list(omi$call)[[3]]), 
+s.distri(omi$ls, eval.parent(as.list(omi$call)[[3]]), 
          cstar = 0, axesell = FALSE, cellipse = 1, sub = "Niches", csub = 2)
-s.label(omi$li, 1, 2, 
-        clabel = 1, 
-        boxes = F,
-        add.plot = TRUE,
-        col = "red")
-
-
-adegraphics::s.label(omi$li, ppoints.col= "red", plabels = list(box = list(draw = FALSE), 
-                                                                 optim = TRUE), plot = F)
+s.label(omi$li, 1, 2, clabel = 0.7, add.plot = TRUE)
