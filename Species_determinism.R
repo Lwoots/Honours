@@ -100,13 +100,23 @@ registerDoParallel(cl)
 num = 1
 
 repeat{
-  set.seed(Sys.time())
-  rplots <- sample(150, 100)
-  train <- all_dat[rplots, ]
-  test <-  all_dat[-c(rplots), ]
   
   #Shuffle species, keeping row and column sums equal to original data.
-  rsp <- permatswap(train[,1:10], times = 1, burnin = 5, fixedmar = "both", mtype = "prab")
+  rsp <- permatswap(all_dat[,1:10], times = 1, burnin = 5, fixedmar = "both", mtype = "prab")
+  rand_dat <- cbind(rsp$perm, all_dat[,13:26])
+  
+  set.seed(Sys.time())
+  rplots <- sample(150, 100)
+  train <- rand_dat[rplots,]
+  test <- rand_dat[-c(rplots),]
+  
+  
+  
+  if(train %>% summarise(C_staminodiosum = sum(C_staminodiosum)) == 10 |
+     train %>% summarise(A_fissum = sum(A_fissum)) == 12 |
+     train %>% summarise(A_framesii = sum(A_framesii)) == 12) {
+    next
+  }
   
   #Record the number of species used in each plot
   stoc_sp_num[[num]] <- train %>% summarise(R_burtoniae = sum(R_burtoniae),
@@ -123,11 +133,9 @@ repeat{
   
   #Skip loop interation
   
-  if(stoc_sp_num[[num]][[8]] == 10) {
-    next
-  }
   
-  sp <- as.data.frame(rsp$perm)
+  
+  sp <- as.matrix(train[,1:10])
   covar <- as.matrix(train[,13:length(train)])
   
   mod <- boral(
@@ -159,7 +167,7 @@ repeat{
   
    
   num <- num + 1
-  if(num > 10) {
+  if(num > 45) {
     break
   }
 }
@@ -186,26 +194,57 @@ stoc_run2_n10_28Aug <- list(stoc_auc_burt,
                            stoc_auc_dic ,
                            stoc_auc_ooph)
 
+new_stoc_run1_n32_31Aug <- list(stoc_auc_burt,
+                            stoc_auc_comp,
+                            stoc_auc_div ,
+                            stoc_auc_del ,
+                            stoc_auc_fis ,
+                            stoc_auc_fram,
+                            stoc_auc_spis,
+                            stoc_auc_stam,
+                            stoc_auc_dic ,
+                            stoc_auc_ooph)
+new_stoc_run2_n45_31Aug <- list(stoc_auc_burt,
+                                stoc_auc_comp,
+                                stoc_auc_div ,
+                                stoc_auc_del ,
+                                stoc_auc_fis ,
+                                stoc_auc_fram,
+                                stoc_auc_spis,
+                                stoc_auc_stam,
+                                stoc_auc_dic ,
+                                stoc_auc_ooph)
+
 save(stoc_run1_n2_28Aug, 
      file = "/Users/larawootton/Documents/Honours/Data/stoc_run1_n2_28Aug.rda")
 save(stoc_run2_n10_28Aug, 
      file = "/Users/larawootton/Documents/Honours/Data/stoc_run2_n10_28Aug.rda")
+save(new_stoc_run1_n32_31Aug, 
+     file = "/Users/larawootton/Documents/Honours/Data/new_stoc_run1_n32_31Aug.rda")
+save(new_stoc_run2_n45_31Aug, 
+     file = "/Users/larawootton/Documents/Honours/Data/new_stoc_run2_n45_31Aug.rda")
+load("/Users/larawootton/Documents/Honours/Data/new_stoc_run1_n32_31Aug.rda")
 
 sp_stoc_run1_n2_28Aug <- sp_num
 save(sp_stoc_run1_n2_28Aug, 
      file = "/Users/larawootton/Documents/Honours/Data/sp_stoc_run1_n2_28Aug.rda")
+sp_new_stoc_run1_n32_31Aug <- stoc_sp_num
+sp_new_stoc_run2_n45_31Aug <- stoc_sp_num
+save(sp_new_stoc_run1_n32_31Aug, 
+     file = "/Users/larawootton/Documents/Honours/Data/sp_new_stoc_run1_n32_31Aug.rda")
+save(sp_new_stoc_run2_n45_31Aug, 
+     file = "/Users/larawootton/Documents/Honours/Data/sp_new_stoc_run2_n45_31Aug.rda")
 
-
-stoc_R_burt <- c(unlist(stoc_run1_n2_28Aug[[1]]), unlist(stoc_run2_n10_28Aug[[1]]))
-stoc_R_comp <- c(unlist(stoc_run1_n2_28Aug[[2]]),unlist(stoc_run2_n10_28Aug[[2]]))
-stoc_D_div <- c(unlist(stoc_run1_n2_28Aug[[3]]),unlist(stoc_run2_n10_28Aug[[3]]))
-stoc_A_del <- c(unlist(stoc_run1_n2_28Aug[[4]]),unlist(stoc_run2_n10_28Aug[[4]]))
-stoc_A_fis <- c(unlist(stoc_run1_n2_28Aug[[5]]),unlist(stoc_run2_n10_28Aug[[5]]))
-stoc_A_fra <- c(unlist(stoc_run1_n2_28Aug[[6]]),unlist(stoc_run2_n10_28Aug[[6]]))
-stoc_C_spis <- c(unlist(stoc_run1_n2_28Aug[[7]]),unlist(stoc_run2_n10_28Aug[[7]]))
-stoc_C_sta <- c(unlist(stoc_run1_n2_28Aug[[8]]),unlist(stoc_run2_n10_28Aug[[8]]))
-stoc_Dicro <- c(unlist(stoc_run1_n2_28Aug[[9]]),unlist(stoc_run2_n10_28Aug[[9]]))
-stoc_Ooph <- c(unlist(stoc_run1_n2_28Aug[[10]]),unlist(stoc_run2_n10_28Aug[[10]]))
+stoc_R_burt <- unlist(new_stoc_run1_n32_31Aug[[1]])#c(unlist(stoc_run1_n2_28Aug[[1]]), unlist(stoc_run2_n10_28Aug[[1]]))
+stoc_R_comp <- unlist(new_stoc_run1_n32_31Aug[[2]])#c(unlist(stoc_run1_n2_28Aug[[2]]),unlist(stoc_run2_n10_28Aug[[2]]))
+stoc_D_div <- unlist(new_stoc_run1_n32_31Aug[[3]])#c(unlist(stoc_run1_n2_28Aug[[3]]),unlist(stoc_run2_n10_28Aug[[3]]))
+stoc_A_del <- unlist(new_stoc_run1_n32_31Aug[[4]])#c(unlist(stoc_run1_n2_28Aug[[4]]),unlist(stoc_run2_n10_28Aug[[4]]))
+stoc_A_fis <- unlist(new_stoc_run1_n32_31Aug[[5]])#c(unlist(stoc_run1_n2_28Aug[[5]]),unlist(stoc_run2_n10_28Aug[[5]]))
+stoc_A_fra <- unlist(new_stoc_run1_n32_31Aug[[6]])#c(unlist(stoc_run1_n2_28Aug[[6]]),unlist(stoc_run2_n10_28Aug[[6]]))
+stoc_C_spis <- unlist(new_stoc_run1_n32_31Aug[[7]])#c(unlist(stoc_run1_n2_28Aug[[7]]),unlist(stoc_run2_n10_28Aug[[7]]))
+stoc_C_sta <- unlist(new_stoc_run1_n32_31Aug[[8]])#c(unlist(stoc_run1_n2_28Aug[[8]]),unlist(stoc_run2_n10_28Aug[[8]]))
+stoc_Dicro <- unlist(new_stoc_run1_n32_31Aug[[9]])#c(unlist(stoc_run1_n2_28Aug[[9]]),unlist(stoc_run2_n10_28Aug[[9]]))
+stoc_Ooph <- unlist(new_stoc_run1_n32_31Aug[[10]])#c(unlist(stoc_run1_n2_28Aug[[10]]),unlist(stoc_run2_n10_28Aug[[10]]))
 
 boxplot(stoc_R_burt, stoc_R_comp, stoc_D_div, stoc_A_del, stoc_A_fis, stoc_A_fra, stoc_C_spis, stoc_C_sta, stoc_Dicro, stoc_Ooph)
 
