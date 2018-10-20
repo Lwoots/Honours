@@ -42,15 +42,18 @@ var <- calc.varpart(occ_model_scaled_nospat_17Aug)
 part <- data.frame(enviro = var$varpart.X, bio = var$varpart.lv)
 bardat <- data.frame(Species =rep(rownames(part),2), variance = c(as.vector(part[,1]), as.vector(part[,2])), type = c(rep("enviro",10), rep("lv",10)))
 
-occ <- ggplot(bardat, aes(x=Species, y=variance, fill = type)) +
+(occ <- ggplot(bardat, aes(x=Species, y=variance, fill = type)) +
   geom_bar(stat="identity", width = 0.55, position=position_dodge()) + 
   theme_bw() +
-  theme(axis.text.x = element_text(angle = 45, 
+  theme(axis.text.x = element_text(angle = 40, 
                                    colour = "black", 
-                                   size = 10,
+                                   size = 13,
                                    vjust = 0.98, 
-                                   hjust = 1),
-        axis.title.y = element_text(size = 14),
+                                   hjust = 1,
+                                   face = "italic"),
+        axis.title.y = element_text(size = 15),
+        axis.text.y = element_text(size = 11,
+                                   colour = "black"),
         axis.title.x = element_blank(),
         panel.grid = element_blank()) +
   ylab("Proportion of variance") +
@@ -81,7 +84,8 @@ occ <- ggplot(bardat, aes(x=Species, y=variance, fill = type)) +
   scale_fill_manual(labels = c("Environment", "Latent"),
                     name = "Source",
                     values = c("#F26419", "#F6B540")) +
-  guides(fill = F)
+  guides(fill = F) +
+  annotate("text", x=1, y=0.99, label= "b)", size = 10))
 
 #abundance
 
@@ -90,19 +94,23 @@ var2 <- calc.varpart(poisson_abn_1Sept)
 part <- data.frame(enviro = var2$varpart.X, bio = var2$varpart.lv)
 bardat2 <- data.frame(Species =rep(rownames(part),2), variance = c(as.vector(part[,1]), as.vector(part[,2])), type = c(rep("enviro",10), rep("lv",10)))
 
-abn <- ggplot(bardat2, aes(x=Species, y=variance, fill = type)) +
+(abn <- ggplot(bardat2, aes(x=Species, y=variance, fill = type)) +
   geom_bar(stat="identity", width = 0.55, position=position_dodge()) + 
   theme_bw() +
   theme(axis.text.x = element_text(angle = 45, 
                                    colour = "black", 
                                    size = 10,
                                    vjust = 0.98, 
-                                   hjust = 1),
+                                   hjust = 1,
+                                   face = "italic"),
         axis.title.x = element_blank(),
         axis.ticks.x = element_blank(),
-        axis.title.y = element_text(size = 14),
+        axis.title.y = element_text(size = 15),
+        axis.text.y = element_text(size = 11,
+                                   colour = "black"),
         panel.grid = element_blank(),
-        legend.position=c(0.9, 0.9)) +
+        legend.position=c(0.85, 0.9),
+        legend.text = element_text(size = 15)) +
   ylab("Proportion of variance") +
   scale_y_continuous(breaks = seq(0,1,0.2), limits = c(0, 1.001)) +
   scale_x_discrete(
@@ -118,12 +126,13 @@ abn <- ggplot(bardat2, aes(x=Species, y=variance, fill = type)) +
                "A_fissum"),
     
     labels = NULL) + scale_fill_manual(labels = c("Environment", "Latent"),
-                          name = "Source",
+                          name = "",
                           values = c("#F26419", "#F6B540")
-                    ) 
+                    ) +
+  annotate("text", x=1, y=0.99, label= "a)", size = 10))
   
 
-cowplot::plot_grid(abn,occ, ncol = 1, rel_heights = c(0.85,1))
+cowplot::plot_grid(abn,occ, ncol = 1, rel_heights = c(0.82,1))
   
   
   
@@ -162,38 +171,62 @@ cor.test(rescors$correlation, envcors$cor)
 
 require("lessR")
 
-cormat <- as.data.frame(rescors$sig.correlaton)
-cormat <- cormat %>% select("Oophytum_sp",
-                            "A_delaetii",
-                            "A_framesii",
-                            "R_comptonii",
-                                            "R_burtoniae", 
-                            "D_diversifolium",
-                            "Dicrocaulon_sp",
-                            
-                            
-                            "C_staminodiosum",
-                            
-                            "C_spissum",
-                            "A_fissum") 
-new <- cormat[ order(colnames(cormat),decreasing = T), ] %>% as.matrix()
+cormat <- as.data.frame(envcors$sig.cor)
+cormat <- as.data.frame(rescors$correlation)
+
+names(cormat) <- c("R. burtoniae", 
+                   "R. comptonii", 
+                   "D. diversifolium",
+                   "A. delaetii",
+                   "A. fissum",
+                   "A. framesii",
+                   "C. spissum",
+                   "C. staminodiosum",
+                   "Dicrocaulon sp.",
+                   "Oophytum sp.")
+row.names(cormat) <- c("R. burtoniae", 
+                                        "R. comptonii", 
+                                        "D. diversifolium",
+                                        "A. delaetii",
+                                        "A. fissum",
+                                        "A. framesii",
+                                        "C. spissum",
+                                        "C. staminodiosum",
+                                        "Dicrocaulon sp.",
+                                        "Oophytum sp.")
+
+
+
+cormat <- cormat %>% select("Oophytum sp.",
+                   "A. delaetii",
+                   "A. framesii",
+                   "C. staminodiosum",
+                   "C. spissum",
+                   "A. fissum",
+                   "R. comptonii",
+                   "R. burtoniae", 
+                   "D. diversifolium",
+                   "Dicrocaulon sp.")
+
 new <- cormat[ colnames(cormat), ] %>% as.matrix()
 
-corrplot(new)
+corrplot(new,
+         #col = brewer.pal(n = 8, name = "RdYlBu"),
+        
+         tl.col = "black",
+         tl.cex = 1.1,
+         font = 3,
+         type = "upper")
 
-recor <- corReorder(rescors$sig.correlaton, vars = c("R_comptonii",
-                                            "R_burtoniae", 
-                                            "Oophytum_sp",
-                                            "Dicrocaulon_sp",
-                                            "D_diversifolium",
-                                            "C_staminodiosum",
-                                            "A_delaetii",
-                                            "A_framesii",
-                                            "C_spissum",
-                                            "A_fissum"))
+text
+
+
+qgraph::qgraph(new, shape="circle", posCol="darkgreen", negCol="darkred", layout="groups", vsize=10,
+               labels = c( "Oph", "Adl", "Afr", "Cst","Csp","Afs", "Rcp", "Rbr","Ddv","Dcr" ))
+
 
 #Figure 5 ####
-
+load("poisson_abn_1Sept.rda")
 mod <- occ_model_scaled_nospat_17Aug
 mod <- poisson_abn_1Sept
 
@@ -221,15 +254,15 @@ ylabs <- c("pH",
            "%N",
            "aspect",
            "clay",
-           "d15N",
+           expression(paste(delta^15~N)),
            "drainage",
            "slope")
 
-par(mfrow = c(2,5))
+par(mfrow = c(1,3))
 
 
 #R burt ####
-par(mar = c(5.1, 5, 2.1, 0))
+par(mar = c(5.1, 7, 2.1, 0))
 
 col.seq <-
   rep("black", length(mod$hpdintervals$X.coefs[1, 1:15, "lower"]))
@@ -242,13 +275,17 @@ plot(
   yaxt = "n",
   ylab = "",
   xlab = xlabs[1],
+  font.lab = 3,
   col = col.seq,
   xlim = c(
     min(mod$hpdintervals$X.coefs[, 1:14, "lower"]),
     max(mod$hpdintervals$X.coefs[, 1:14, "upper"])
   ),
   pch = "x",
-  cex.lab = 1.4
+  cex = 1.5,
+  cex.axis = 1.6,
+  cex.lab = 2.3
+  
 )
 
 axis(
@@ -256,7 +293,7 @@ axis(
   labels = ylabs,
   at = 1:15,
   las = 2,
-  cex.axis = 1.1
+  cex.axis = 1.7
 )
 
 segments(
@@ -270,7 +307,7 @@ abline(v = 0, lty = 3)
 
 #R comp ####
 
-par(mar = c(5.1, 4, 2.1, 1) )
+par(mar = c(5.1, 4.5, 2.1, 2.5) )
 col.seq <-
   rep("black", length(mod$hpdintervals$X.coefs[2, 1:15, "lower"]))
 col.seq[mod$hpdintervals$X.coefs[2, 1:15, "lower"] < 0 &
@@ -282,13 +319,16 @@ plot(
   yaxt = "n",
   ylab = "",
   xlab = xlabs[2],
+  font.lab = 3,
   col = col.seq,
   xlim = c(
     min(mod$hpdintervals$X.coefs[, 1:15, "lower"]),
     max(mod$hpdintervals$X.coefs[, 1:15, "upper"])
   ),
   pch = "x",
-  cex.lab = 1.4
+  cex = 1.5,
+  cex.axis = 1.6,
+  cex.lab = 2.3
 )
 
 
@@ -302,7 +342,9 @@ segments(
 abline(v = 0, lty = 3)
 
 #D div ####
-par(mar = c(5.1, 3, 2.1, 2))
+#par(mar = c(5.1, 3, 2.1, 2))
+#par(mar = c(5.1, 6.5, 2.1, 0))
+par(mar = c(5.1, 2, 2.1, 5) )
 
 col.seq <-
   rep("black", length(mod$hpdintervals$X.coefs[3, 1:15, "lower"]))
@@ -315,15 +357,25 @@ plot(
   yaxt = "n",
   ylab = "",
   xlab = xlabs[3],
+  font.lab = 3,
   col = col.seq,
   xlim = c(
     min(mod$hpdintervals$X.coefs[, 1:15, "lower"]),
     max(mod$hpdintervals$X.coefs[, 1:15, "upper"])
   ),
   pch = "x",
-  cex.lab = 1.4
+  cex = 1.5,
+  cex.axis = 1.6,
+  cex.lab = 2.3
 )
 
+#axis(
+#  2,
+#  labels = ylabs,
+#  at = 1:15,
+#  las = 2,
+#  cex.axis = 1.5
+#)
 
 segments(
   x0 = mod$hpdintervals$X.coefs[3, 1:15, "lower"],
@@ -336,7 +388,8 @@ abline(v = 0, lty = 3)
 
 #A del ####
 
-par(mar = c(5.1, 2, 2.1, 3))
+#par(mar = c(5.1, 2, 2.1, 4.5))
+par(mar = c(5.1, 7, 2.1, 0))
 col.seq <-
   rep("black", length(mod$hpdintervals$X.coefs[4, 1:15, "lower"]))
 col.seq[mod$hpdintervals$X.coefs[4, 1:15, "lower"] < 0 &
@@ -348,13 +401,16 @@ plot(
   yaxt = "n",
   ylab = "",
   xlab = xlabs[4],
+  font.lab = 3,
   col = col.seq,
   xlim = c(
     min(mod$hpdintervals$X.coefs[, 1:15, "lower"]),
     max(mod$hpdintervals$X.coefs[, 1:15, "upper"])
   ),
   pch = "x",
-  cex.lab = 1.4
+  cex = 1.5,
+  cex.axis = 1.6,
+  cex.lab = 2.3
 )
 
 
@@ -367,8 +423,18 @@ segments(
 )
 abline(v = 0, lty = 3)
 
+axis(
+  2,
+  labels = ylabs,
+  at = 1:15,
+  las = 2,
+  cex.axis = 1.7
+)
+
+
 #A fiss ####
-par(mar = c(5.1, 1, 2.1, 4))
+#par(mar = c(5.1, 1, 2.1, 4))
+par(mar = c(5.1, 4.5, 2.1, 2.5) )
 
 col.seq <-
   rep("black", length(mod$hpdintervals$X.coefs[5, 1:15, "lower"]))
@@ -381,16 +447,25 @@ plot(
   yaxt = "n",
   ylab = "",
   xlab = xlabs[5],
+  font.lab = 3,
   col = col.seq,
   xlim = c(
     min(mod$hpdintervals$X.coefs[, 1:15, "lower"]),
     max(mod$hpdintervals$X.coefs[, 1:15, "upper"])
   ),
   pch = "x",
-  cex.lab = 1.4
+  cex = 1.5,
+  cex.axis = 1.6,
+  cex.lab = 2.3
 )
 
-
+#axis(
+#  2,
+#  labels = ylabs,
+#  at = 1:15,
+#  las = 2,
+#  cex.axis = 1.5
+#)
 
 segments(
   x0 = mod$hpdintervals$X.coefs[5, 1:15, "lower"],
@@ -403,7 +478,9 @@ abline(v = 0, lty = 3)
 
 #A fra ####
 
-par(mar = c(5.1, 5, 2.1, 0))
+#par(mar = c(5.1, 5, 2.1, 0))
+par(mar = c(5.1, 2, 2.1, 5) )
+
 col.seq <-
   rep("black", length(mod$hpdintervals$X.coefs[6, 1:15, "lower"]))
 col.seq[mod$hpdintervals$X.coefs[6, 1:15, "lower"] < 0 &
@@ -415,21 +492,16 @@ plot(
   yaxt = "n",
   ylab = "",
   xlab = xlabs[6],
+  font.lab = 3,
   col = col.seq,
   xlim = c(
     min(mod$hpdintervals$X.coefs[, 1:15, "lower"]),
     max(mod$hpdintervals$X.coefs[, 1:15, "upper"])
   ),
   pch = "x",
-  cex.lab = 1.4
-)
-
-axis(
-  2,
-  labels = ylabs,
-  at = 1:15,
-  las = 2,
-  cex.axis = 1.1
+  cex = 1.5,
+  cex.axis = 1.6,
+  cex.lab = 2.3
 )
 
 
@@ -443,7 +515,8 @@ segments(
 abline(v = 0, lty = 3)
 
 #C spis ####
-par(mar = c(5.1, 4, 2.1, 1) )
+#par(mar = c(5.1, 4, 2.1, 1) )
+par(mar = c(5.1, 7, 2.1, 0))
 
 col.seq <-
   rep("black", length(mod$hpdintervals$X.coefs[7, 1:15, "lower"]))
@@ -456,13 +529,23 @@ plot(
   yaxt = "n",
   ylab = "",
   xlab = xlabs[7],
+  font.lab = 3,
   col = col.seq,
   xlim = c(
     min(mod$hpdintervals$X.coefs[, 1:15, "lower"]),
     max(mod$hpdintervals$X.coefs[, 1:15, "upper"])
   ),
   pch = "x",
-  cex.lab = 1.4
+  cex = 1.5,
+  cex.axis = 1.6,
+  cex.lab = 2.3
+)
+axis(
+  2,
+  labels = ylabs,
+  at = 1:15,
+  las = 2,
+  cex.axis = 1.7
 )
 
 
@@ -477,7 +560,8 @@ abline(v = 0, lty = 3)
 
 #C sta ####
 
-par(mar = c(5.1, 3, 2.1, 2))
+#par(mar = c(5.1, 3, 2.1, 2))
+par(mar = c(5.1, 4.5, 2.1, 2.5) )
 col.seq <-
   rep("black", length(mod$hpdintervals$X.coefs[8, 1:15, "lower"]))
 col.seq[mod$hpdintervals$X.coefs[8, 1:15, "lower"] < 0 &
@@ -489,13 +573,16 @@ plot(
   yaxt = "n",
   ylab = "",
   xlab = xlabs[8],
+  font.lab = 3,
   col = col.seq,
   xlim = c(
     min(mod$hpdintervals$X.coefs[, 1:15, "lower"]),
     max(mod$hpdintervals$X.coefs[, 1:15, "upper"])
   ),
   pch = "x",
-  cex.lab = 1.4
+  cex = 1.5,
+  cex.axis = 1.6,
+  cex.lab = 2.3
 )
 
 
@@ -509,7 +596,8 @@ segments(
 abline(v = 0, lty = 3)
 
 #Dicr ####
-par(mar = c(5.1, 2, 2.1, 3))
+#par(mar = c(5.1, 2, 2.1, 3))
+par(mar = c(5.1, 2, 2.1, 5) )
 
 col.seq <-
   rep("black", length(mod$hpdintervals$X.coefs[9, 1:15, "lower"]))
@@ -522,15 +610,25 @@ plot(
   yaxt = "n",
   ylab = "",
   xlab = xlabs[9],
+  font.lab = 3,
   col = col.seq,
   xlim = c(
     min(mod$hpdintervals$X.coefs[, 1:15, "lower"]),
     max(mod$hpdintervals$X.coefs[, 1:15, "upper"])
   ),
   pch = "x",
-  cex.lab = 1.4
+  cex = 1.5,
+  cex.axis = 1.6,
+  cex.lab = 2.3
 )
 
+#axis(
+#  2,
+#  labels = ylabs,
+#  at = 1:15,
+#  las = 2,
+#  cex.axis = 1.5
+#)
 
 segments(
   x0 = mod$hpdintervals$X.coefs[9, 1:15, "lower"],
@@ -541,9 +639,11 @@ segments(
 )
 abline(v = 0, lty = 3)
 
-#Ooph
+#Ooph ####
 
-par(mar = c(5.1, 1, 2.1, 4))
+#par(mar = c(5.1, 1, 2.1, 4))
+par(mar = c(5.1, 7, 2.1, 0))
+
 col.seq <-
   rep("black", length(mod$hpdintervals$X.coefs[10, 1:15, "lower"]))
 col.seq[mod$hpdintervals$X.coefs[10, 1:15, "lower"] < 0 &
@@ -555,13 +655,16 @@ plot(
   yaxt = "n",
   ylab = "",
   xlab = xlabs[10],
+  font.lab = 3,
   col = col.seq,
   xlim = c(
     min(mod$hpdintervals$X.coefs[, 1:15, "lower"]),
     max(mod$hpdintervals$X.coefs[, 1:15, "upper"])
   ),
   pch = "x",
-  cex.lab = 1.4
+  cex = 1.5,
+  cex.axis = 1.6,
+  cex.lab = 2.3
 )
 
 
@@ -573,6 +676,478 @@ segments(
   col = col.seq
 )
 abline(v = 0, lty = 3)
+
+axis(
+  2,
+  labels = ylabs,
+  at = 1:15,
+  las = 2,
+  cex.axis = 1.7
+)
+
+#Occurrence est ####
+load("occ_model_scaled_nospat_17Aug.rda")
+mod <- occ_model_scaled_nospat_17Aug
+
+
+xlabs <-  c(
+  "R. burtoniae", 
+  "R. comptonii", 
+  "D. diversifolium",
+  "A. delaetii",
+  "A. fissum",
+  "A. framesii",
+  "C. spissum",
+  "C. staminodiosum",
+  "Dicrocaulon sp.",
+  "Oophytum sp.")
+
+ylabs <- c("pH",
+           "Na",
+           "C:N ratio",
+           "Ca",
+           "quartz",
+           "elevation",
+           "%1-2mm",
+           "%2-5mm",
+           "P",
+           "%N",
+           "aspect",
+           "clay",
+           expression(paste(delta^15~N)),
+           "drainage")
+
+par(mfrow = c(1,3))
+
+
+#R burt ####
+par(mar = c(5.1, 7, 2.1, 0))
+
+col.seq <-
+  rep("black", length(mod$hpdintervals$X.coefs[1, 1:14, "lower"]))
+col.seq[mod$hpdintervals$X.coefs[1, 1:14, "lower"] < 0 &
+          mod$hpdintervals$X.coefs[1, 1:14, "upper"] > 0] <- "grey"
+
+plot(
+  x = c(mod$X.coefs.mean[1, 1:14]),
+  y = 1:14,
+  yaxt = "n",
+  ylab = "",
+  xlab = xlabs[1],
+  font.lab = 3,
+  col = col.seq,
+  xlim = c(
+    min(mod$hpdintervals$X.coefs[, 1:14, "lower"]),
+    max(mod$hpdintervals$X.coefs[, 1:14, "upper"])
+  ),
+  pch = "x",
+  cex = 1.5,
+  cex.axis = 1.6,
+  cex.lab = 2.3
+  
+)
+
+axis(
+  2,
+  labels = ylabs,
+  at = 1:14,
+  las = 2,
+  cex.axis = 1.7
+)
+
+segments(
+  x0 = mod$hpdintervals$X.coefs[1, 1:14, "lower"],
+  y0 = 1:15,
+  x1 = mod$hpdintervals$X.coefs[1, 1:14, "upper"],
+  y1 = 1:15,
+  col = col.seq
+)
+abline(v = 0, lty = 3)
+
+#R comp ####
+
+par(mar = c(5.1, 4.5, 2.1, 2.5) )
+col.seq <-
+  rep("black", length(mod$hpdintervals$X.coefs[2, 1:14, "lower"]))
+col.seq[mod$hpdintervals$X.coefs[2, 1:14, "lower"] < 0 &
+          mod$hpdintervals$X.coefs[2, 1:14, "upper"] > 0] <- "grey"
+
+plot(
+  x = c(mod$X.coefs.mean[2, 1:14]),
+  y = 1:14,
+  yaxt = "n",
+  ylab = "",
+  xlab = xlabs[2],
+  font.lab = 3,
+  col = col.seq,
+  xlim = c(
+    min(mod$hpdintervals$X.coefs[, 1:14, "lower"]),
+    max(mod$hpdintervals$X.coefs[, 1:14, "upper"])
+  ),
+  pch = "x",
+  cex = 1.5,
+  cex.axis = 1.6,
+  cex.lab = 2.3
+)
+
+
+segments(
+  x0 = mod$hpdintervals$X.coefs[2, 1:14, "lower"],
+  y0 = 1:14,
+  x1 = mod$hpdintervals$X.coefs[2, 1:14, "upper"],
+  y1 = 1:14,
+  col = col.seq
+)
+abline(v = 0, lty = 3)
+
+#D div ####
+#par(mar = c(5.1, 3, 2.1, 2))
+#par(mar = c(5.1, 6.5, 2.1, 0))
+par(mar = c(5.1, 2, 2.1, 5) )
+
+col.seq <-
+  rep("black", length(mod$hpdintervals$X.coefs[3, 1:14, "lower"]))
+col.seq[mod$hpdintervals$X.coefs[3, 1:14, "lower"] < 0 &
+          mod$hpdintervals$X.coefs[3, 1:14, "upper"] > 0] <- "grey"
+
+plot(
+  x = c(mod$X.coefs.mean[3, 1:14]),
+  y = 1:14,
+  yaxt = "n",
+  ylab = "",
+  xlab = xlabs[3],
+  font.lab = 3,
+  col = col.seq,
+  xlim = c(
+    min(mod$hpdintervals$X.coefs[, 1:14, "lower"]),
+    max(mod$hpdintervals$X.coefs[, 1:14, "upper"])
+  ),
+  pch = "x",
+  cex = 1.5,
+  cex.axis = 1.6,
+  cex.lab = 2.3
+)
+
+#axis(
+#  2,
+#  labels = ylabs,
+#  at = 1:15,
+#  las = 2,
+#  cex.axis = 1.5
+#)
+
+segments(
+  x0 = mod$hpdintervals$X.coefs[3, 1:14, "lower"],
+  y0 = 1:14,
+  x1 = mod$hpdintervals$X.coefs[3, 1:14, "upper"],
+  y1 = 1:14,
+  col = col.seq
+)
+abline(v = 0, lty = 3)
+
+#A del ####
+
+#par(mar = c(5.1, 2, 2.1, 4.5))
+par(mar = c(5.1, 7, 2.1, 0))
+col.seq <-
+  rep("black", length(mod$hpdintervals$X.coefs[4, 1:14, "lower"]))
+col.seq[mod$hpdintervals$X.coefs[4, 1:14, "lower"] < 0 &
+          mod$hpdintervals$X.coefs[4, 1:14, "upper"] > 0] <- "grey"
+
+plot(
+  x = c(mod$X.coefs.mean[4, 1:14]),
+  y = 1:14,
+  yaxt = "n",
+  ylab = "",
+  xlab = xlabs[4],
+  font.lab = 3,
+  col = col.seq,
+  xlim = c(
+    min(mod$hpdintervals$X.coefs[, 1:14, "lower"]),
+    max(mod$hpdintervals$X.coefs[, 1:14, "upper"])
+  ),
+  pch = "x",
+  cex = 1.5,
+  cex.axis = 1.6,
+  cex.lab = 2.3
+)
+
+
+segments(
+  x0 = mod$hpdintervals$X.coefs[4, 1:14, "lower"],
+  y0 = 1:14,
+  x1 = mod$hpdintervals$X.coefs[4, 1:14, "upper"],
+  y1 = 1:14,
+  col = col.seq
+)
+abline(v = 0, lty = 3)
+
+axis(
+  2,
+  labels = ylabs,
+  at = 1:14,
+  las = 2,
+  cex.axis = 1.7
+)
+
+
+#A fiss ####
+#par(mar = c(5.1, 1, 2.1, 4))
+par(mar = c(5.1, 4.5, 2.1, 2.5) )
+
+col.seq <-
+  rep("black", length(mod$hpdintervals$X.coefs[5, 1:14, "lower"]))
+col.seq[mod$hpdintervals$X.coefs[5, 1:14, "lower"] < 0 &
+          mod$hpdintervals$X.coefs[5, 1:14, "upper"] > 0] <- "grey"
+
+plot(
+  x = c(mod$X.coefs.mean[5, 1:14]),
+  y = 1:14,
+  yaxt = "n",
+  ylab = "",
+  xlab = xlabs[5],
+  font.lab = 3,
+  col = col.seq,
+  xlim = c(
+    min(mod$hpdintervals$X.coefs[, 1:14, "lower"]),
+    max(mod$hpdintervals$X.coefs[, 1:14, "upper"])
+  ),
+  pch = "x",
+  cex = 1.5,
+  cex.axis = 1.6,
+  cex.lab = 2.3
+)
+
+#axis(
+#  2,
+#  labels = ylabs,
+#  at = 1:15,
+#  las = 2,
+#  cex.axis = 1.5
+#)
+
+segments(
+  x0 = mod$hpdintervals$X.coefs[5, 1:14, "lower"],
+  y0 = 1:14,
+  x1 = mod$hpdintervals$X.coefs[5, 1:14, "upper"],
+  y1 = 1:14,
+  col = col.seq
+)
+abline(v = 0, lty = 3)
+
+#A fra ####
+
+#par(mar = c(5.1, 5, 2.1, 0))
+par(mar = c(5.1, 2, 2.1, 5) )
+
+col.seq <-
+  rep("black", length(mod$hpdintervals$X.coefs[6, 1:14, "lower"]))
+col.seq[mod$hpdintervals$X.coefs[6, 1:14, "lower"] < 0 &
+          mod$hpdintervals$X.coefs[6, 1:14, "upper"] > 0] <- "grey"
+
+plot(
+  x = c(mod$X.coefs.mean[6, 1:14]),
+  y = 1:14,
+  yaxt = "n",
+  ylab = "",
+  xlab = xlabs[6],
+  font.lab = 3,
+  col = col.seq,
+  xlim = c(
+    min(mod$hpdintervals$X.coefs[, 1:14, "lower"]),
+    max(mod$hpdintervals$X.coefs[, 1:14, "upper"])
+  ),
+  pch = "x",
+  cex = 1.5,
+  cex.axis = 1.6,
+  cex.lab = 2.3
+)
+
+
+segments(
+  x0 = mod$hpdintervals$X.coefs[6, 1:14, "lower"],
+  y0 = 1:14,
+  x1 = mod$hpdintervals$X.coefs[6, 1:14, "upper"],
+  y1 = 1:14,
+  col = col.seq
+)
+abline(v = 0, lty = 3)
+
+#C spis ####
+#par(mar = c(5.1, 4, 2.1, 1) )
+par(mar = c(5.1, 7, 2.1, 0))
+
+col.seq <-
+  rep("black", length(mod$hpdintervals$X.coefs[7, 1:14, "lower"]))
+col.seq[mod$hpdintervals$X.coefs[7, 1:14, "lower"] < 0 &
+          mod$hpdintervals$X.coefs[7, 1:14, "upper"] > 0] <- "grey"
+
+plot(
+  x = c(mod$X.coefs.mean[7, 1:14]),
+  y = 1:14,
+  yaxt = "n",
+  ylab = "",
+  xlab = xlabs[7],
+  font.lab = 3,
+  col = col.seq,
+  xlim = c(
+    min(mod$hpdintervals$X.coefs[, 1:14, "lower"]),
+    max(mod$hpdintervals$X.coefs[, 1:14, "upper"])
+  ),
+  pch = "x",
+  cex = 1.5,
+  cex.axis = 1.6,
+  cex.lab = 2.3
+)
+axis(
+  2,
+  labels = ylabs,
+  at = 1:14,
+  las = 2,
+  cex.axis = 1.7
+)
+
+
+segments(
+  x0 = mod$hpdintervals$X.coefs[7, 1:14, "lower"],
+  y0 = 1:14,
+  x1 = mod$hpdintervals$X.coefs[7, 1:14, "upper"],
+  y1 = 1:14,
+  col = col.seq
+)
+abline(v = 0, lty = 3)
+
+#C sta ####
+
+#par(mar = c(5.1, 3, 2.1, 2))
+par(mar = c(5.1, 4.5, 2.1, 2.5) )
+col.seq <-
+  rep("black", length(mod$hpdintervals$X.coefs[8, 1:14, "lower"]))
+col.seq[mod$hpdintervals$X.coefs[8, 1:14, "lower"] < 0 &
+          mod$hpdintervals$X.coefs[8, 1:14, "upper"] > 0] <- "grey"
+
+plot(
+  x = c(mod$X.coefs.mean[8, 1:14]),
+  y = 1:14,
+  yaxt = "n",
+  ylab = "",
+  xlab = xlabs[8],
+  font.lab = 3,
+  col = col.seq,
+  xlim = c(
+    min(mod$hpdintervals$X.coefs[, 1:14, "lower"]),
+    max(mod$hpdintervals$X.coefs[, 1:14, "upper"])
+  ),
+  pch = "x",
+  cex = 1.5,
+  cex.axis = 1.6,
+  cex.lab = 2.3
+)
+
+
+segments(
+  x0 = mod$hpdintervals$X.coefs[8, 1:14, "lower"],
+  y0 = 1:14,
+  x1 = mod$hpdintervals$X.coefs[8, 1:14, "upper"],
+  y1 = 1:14,
+  col = col.seq
+)
+abline(v = 0, lty = 3)
+
+#Dicr ####
+#par(mar = c(5.1, 2, 2.1, 3))
+par(mar = c(5.1, 2, 2.1, 5) )
+
+col.seq <-
+  rep("black", length(mod$hpdintervals$X.coefs[9, 1:14, "lower"]))
+col.seq[mod$hpdintervals$X.coefs[9, 1:14, "lower"] < 0 &
+          mod$hpdintervals$X.coefs[9, 1:14, "upper"] > 0] <- "grey"
+
+plot(
+  x = c(mod$X.coefs.mean[9, 1:14]),
+  y = 1:14,
+  yaxt = "n",
+  ylab = "",
+  xlab = xlabs[9],
+  font.lab = 3,
+  col = col.seq,
+  xlim = c(
+    min(mod$hpdintervals$X.coefs[, 1:14, "lower"]),
+    max(mod$hpdintervals$X.coefs[, 1:14, "upper"])
+  ),
+  pch = "x",
+  cex = 1.5,
+  cex.axis = 1.6,
+  cex.lab = 2.3
+)
+
+#axis(
+#  2,
+#  labels = ylabs,
+#  at = 1:15,
+#  las = 2,
+#  cex.axis = 1.5
+#)
+
+segments(
+  x0 = mod$hpdintervals$X.coefs[9, 1:14, "lower"],
+  y0 = 1:14,
+  x1 = mod$hpdintervals$X.coefs[9, 1:14, "upper"],
+  y1 = 1:14,
+  col = col.seq
+)
+abline(v = 0, lty = 3)
+
+#Ooph ####
+
+#par(mar = c(5.1, 1, 2.1, 4))
+par(mar = c(5.1, 7, 2.1, 0))
+
+col.seq <-
+  rep("black", length(mod$hpdintervals$X.coefs[10, 1:14, "lower"]))
+col.seq[mod$hpdintervals$X.coefs[10, 1:14, "lower"] < 0 &
+          mod$hpdintervals$X.coefs[10, 1:14, "upper"] > 0] <- "grey"
+
+plot(
+  x = c(mod$X.coefs.mean[10, 1:14]),
+  y = 1:14,
+  yaxt = "n",
+  ylab = "",
+  xlab = xlabs[10],
+  font.lab = 3,
+  col = col.seq,
+  xlim = c(
+    min(mod$hpdintervals$X.coefs[, 1:14, "lower"]),
+    max(mod$hpdintervals$X.coefs[, 1:14, "upper"])
+  ),
+  pch = "x",
+  cex = 1.5,
+  cex.axis = 1.6,
+  cex.lab = 2.3
+)
+
+
+segments(
+  x0 = mod$hpdintervals$X.coefs[10, 1:14, "lower"],
+  y0 = 1:14,
+  x1 = mod$hpdintervals$X.coefs[10, 1:14, "upper"],
+  y1 = 1:14,
+  col = col.seq
+)
+abline(v = 0, lty = 3)
+
+axis(
+  2,
+  labels = ylabs,
+  at = 1:14,
+  las = 2,
+  cex.axis = 1.7
+)
+
+
+
+
+
 
 #Spatial ####
 
@@ -864,4 +1439,5 @@ measure <- rbind(Acidity,
       less5) %>% round(2)
 
 write.csv(measure, file = "Soil_table.csv", row.names = F)
+
 
